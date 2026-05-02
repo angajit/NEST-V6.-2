@@ -289,11 +289,12 @@
             <div class="form-row">
                 <label>Purpose of Loan</label>
                 <select id="pl_purpose" onchange="autoSaveApp('plPurpose', this.value)">
-                    <option>Medical Emergency</option>
-                    <option>Home Renovation</option>
-                    <option>Education</option>
-                    <option>Wedding</option>
-                    <option>Debt Consolidation</option>
+                    <option value="Medical Emergency">Medical Emergency</option>
+                    <option value="Home Renovation">Home Renovation</option>
+                    <option value="Education">Education</option>
+                    <option value="Wedding">Wedding</option>
+                    <option value="Debt Consolidation">Debt Consolidation</option>
+                    <option value="Other">Other</option>
                 </select>
             </div>
             <button class="btn btn-black" onclick="submitPLToUnderwriting()">SUBMIT FOR UNDERWRITING</button>
@@ -407,7 +408,13 @@
                         <div class="form-row">
                             <label>Purpose</label>
                             <select id="cs_pl_purpose">
-                                <option>Medical Emergency</option><option>Home Renovation</option><option>Education</option><option>Wedding</option><option>Debt Consolidation</option><option>Business Expansion</option>
+                                <option value="Medical Emergency">Medical Emergency</option>
+                                <option value="Home Renovation">Home Renovation</option>
+                                <option value="Education">Education</option>
+                                <option value="Wedding">Wedding</option>
+                                <option value="Debt Consolidation">Debt Consolidation</option>
+                                <option value="Business Expansion">Business Expansion</option>
+                                <option value="Other">Other</option>
                             </select>
                         </div>
                         <div class="form-row"><label>Tenure (Months)</label><input type="number" id="cs_pl_tenure" value="12"></div>
@@ -567,7 +574,7 @@
     let db = JSON.parse(localStorage.getItem('nestFinservDB')) || [];
     let currentAppId = localStorage.getItem('nestCurrentAppId') || null;
     let draftApp = JSON.parse(localStorage.getItem('nestDraftApp')) || {};
-    let cibilRegistry = JSON.parse(localStorage.getItem('nestCibilRegistry')) || {}; // PERSISTENT CIBIL BY PAN
+    let cibilRegistry = JSON.parse(localStorage.getItem('nestCibilRegistry')) || {}; 
 
     function saveDB() { localStorage.setItem('nestFinservDB', JSON.stringify(db)); }
     function setAppIdContext(id) { 
@@ -578,7 +585,6 @@
     }
     function getApp() { return db.find(a => a.appId === currentAppId) || {}; }
 
-    // Instant Pipeline Auto-Saver
     function autoSaveApp(key, value) {
         if(!currentAppId) return;
         const app = getApp();
@@ -604,7 +610,6 @@
         if (durationMs) { await sleep(durationMs); document.getElementById('sys-loader').classList.add('hidden'); }
     }
 
-    // --- FORMAL MODAL ENGINE ---
     function uiAlert(msg, title = "SYSTEM NOTIFICATION") {
         return new Promise(resolve => {
             document.getElementById('ui-modal-title').innerText = title;
@@ -640,7 +645,6 @@
         });
     }
 
-    // Bind Draft logic specifically on load to form elements
     window.onload = () => { 
         if (currentAppId) setAppIdContext(currentAppId); 
         document.querySelectorAll('#form-create input, #form-create select').forEach(el => {
@@ -672,9 +676,15 @@
         }
     }
 
-    // --- 1. CREATE ---
-    function toggleLoanTypeFields() { document.getElementById('pl_amount_field').className = document.getElementById('c_loan_type').value === 'PL' ? 'form-row' : 'hidden'; }
-    function toggleSalariedFields() { document.getElementById('salaried_fields').className = document.getElementById('c_occ').value === 'Salaried' ? '' : 'hidden'; }
+    function toggleLoanTypeFields() { 
+        let field = document.getElementById('pl_amount_field');
+        if(field) field.className = document.getElementById('c_loan_type').value === 'PL' ? 'form-row' : 'hidden'; 
+    }
+    
+    function toggleSalariedFields() { 
+        let field = document.getElementById('salaried_fields');
+        if(field) field.className = document.getElementById('c_occ').value === 'Salaried' ? '' : 'hidden'; 
+    }
 
     async function createProject() {
         try {
@@ -693,7 +703,6 @@
             await showSysLoader("COMMITTING DATA...", 800);
             db.push(app); saveDB(); 
             
-            // STRICT PURGE DRAFT ON SUCCESS
             draftApp = {}; localStorage.removeItem('nestDraftApp');
             document.getElementById('form-create').reset();
             document.querySelectorAll('#form-create input').forEach(i => i.value = ''); 
@@ -708,7 +717,6 @@
         }
     }
 
-    // --- 2. PIPELINE ---
     function renderPipeline() {
         const cont = document.getElementById('pipeline-list'); cont.innerHTML = '';
         const pending = db.filter(a => ['PENDING_KYC', 'PENDING_UW', 'APPROVED_STRUCTURING'].includes(a.status));
@@ -733,7 +741,6 @@
         else if (app.status === 'APPROVED_STRUCTURING') { openStructuring(app, app.loanDetails?.dpP || 20, app.loanDetails?.apr || 12, app.forceUnderwritten); }
     }
 
-    // --- 3. KYC ---
     async function initiateKYC() { document.getElementById('btn-init-kyc').classList.add('hidden'); await sleep(800); document.getElementById('kyc-otp-section').classList.remove('hidden'); }
     async function verifyCKYC() {
         if(document.getElementById('kyc_otp').value.length !== 6) return uiAlert("6-digit OTP required for authentication.", "VERIFICATION FAILED");
@@ -742,51 +749,78 @@
         document.getElementById('kyc-otp-section').classList.add('hidden'); document.getElementById('lbl_ckyc').innerText = app.ckyc; document.getElementById('kyc-success-section').classList.remove('hidden');
     }
 
+    // --- BULLETPROOF UNDERWRITING FLOW TRANSITION ---
     function proceedToUnderwritingFlow() {
-        const app = getApp(); document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
-        
-        document.getElementById('asset_cd_fields').classList.add('hidden'); document.getElementById('asset_bike_fields').classList.add('hidden');
-        
-        if(app.loanType === 'CD' || app.loanType === 'Bike') { 
-            document.getElementById('ap_custId').innerText = app.customerId; document.getElementById('ap_appId').innerText = app.appId; 
-            
-            if(app.loanType === 'CD') {
-                document.getElementById('asset_header_title').innerText = "Consumer Durable Details";
-                document.getElementById('asset_cd_fields').classList.remove('hidden');
-                document.getElementById('ap_cd_type').value = app.p_type || 'Smartphone'; toggleProductFields();
-                if(document.getElementById('ap_os')) document.getElementById('ap_os').value = app.p_os || 'Android';
-                if(document.getElementById('ap_other_name')) document.getElementById('ap_other_name').value = app.p_other_name || ''; 
-                document.getElementById('ap_cd_name').value = app.p_name || ''; 
-                document.getElementById('ap_cd_imei1').value = app.imei1 || ''; 
-                document.getElementById('ap_cd_imei2').value = app.imei2 || '';
-            } else {
-                document.getElementById('asset_header_title').innerText = "Two Wheeler Details";
-                document.getElementById('asset_bike_fields').classList.remove('hidden');
-                document.getElementById('ap_bike_name').value = app.p_name || ''; 
-                document.getElementById('ap_bike_engine').value = app.engineNo || ''; 
-                document.getElementById('ap_bike_chassis').value = app.chassisNo || '';
-            }
+        try {
+            const app = getApp(); 
+            if (!app) return uiAlert("System Error: Active Application Data Lost.");
 
-            document.getElementById('ap_dealerId').value = app.p_dealerId || ''; 
-            document.getElementById('dealer-result').innerText = app.dealerVerified ? `[ VERIFIED ] ${app.dealerName}` : '';
-            if(document.getElementById('ap_sku')) document.getElementById('ap_sku').value = app.p_sku || '';
-            document.getElementById('ap_value').value = app.prodValue || '';
-            document.getElementById('view-asset-product').classList.add('active'); 
-        } else { 
-            document.getElementById('pl_custId').innerText = app.customerId; document.getElementById('pl_appId').innerText = app.appId; 
-            document.getElementById('pl_income').innerText = '₹'+app.income; document.getElementById('pl_req_amt').innerText = '₹'+app.plAmountReq; 
-            document.getElementById('pl_purpose').value = app.plPurpose || 'Medical Emergency'; document.getElementById('view-pl-product').classList.add('active'); 
+            // Hide all active screens
+            document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+            
+            let cdFields = document.getElementById('asset_cd_fields');
+            let bikeFields = document.getElementById('asset_bike_fields');
+            if(cdFields) cdFields.classList.add('hidden'); 
+            if(bikeFields) bikeFields.classList.add('hidden');
+            
+            if(app.loanType === 'CD' || app.loanType === 'Bike') { 
+                if(document.getElementById('ap_custId')) document.getElementById('ap_custId').innerText = app.customerId || '---'; 
+                if(document.getElementById('ap_appId')) document.getElementById('ap_appId').innerText = app.appId || '---'; 
+                
+                if(app.loanType === 'CD') {
+                    if(document.getElementById('asset_header_title')) document.getElementById('asset_header_title').innerText = "Consumer Durable Details";
+                    if(cdFields) cdFields.classList.remove('hidden');
+                    let typeEl = document.getElementById('ap_cd_type');
+                    if(typeEl) typeEl.value = app.p_type || 'Smartphone'; 
+                    toggleProductFields();
+                    if(document.getElementById('ap_os')) document.getElementById('ap_os').value = app.p_os || 'Android';
+                    if(document.getElementById('ap_other_name')) document.getElementById('ap_other_name').value = app.p_other_name || ''; 
+                    if(document.getElementById('ap_cd_name')) document.getElementById('ap_cd_name').value = app.p_name || ''; 
+                    if(document.getElementById('ap_cd_imei1')) document.getElementById('ap_cd_imei1').value = app.imei1 || ''; 
+                    if(document.getElementById('ap_cd_imei2')) document.getElementById('ap_cd_imei2').value = app.imei2 || '';
+                } else {
+                    if(document.getElementById('asset_header_title')) document.getElementById('asset_header_title').innerText = "Two Wheeler Details";
+                    if(bikeFields) bikeFields.classList.remove('hidden');
+                    if(document.getElementById('ap_bike_name')) document.getElementById('ap_bike_name').value = app.p_name || ''; 
+                    if(document.getElementById('ap_bike_engine')) document.getElementById('ap_bike_engine').value = app.engineNo || ''; 
+                    if(document.getElementById('ap_bike_chassis')) document.getElementById('ap_bike_chassis').value = app.chassisNo || '';
+                }
+
+                if(document.getElementById('ap_dealerId')) document.getElementById('ap_dealerId').value = app.p_dealerId || ''; 
+                if(document.getElementById('dealer-result')) document.getElementById('dealer-result').innerText = app.dealerVerified ? `[ VERIFIED ] ${app.dealerName}` : '';
+                if(document.getElementById('ap_sku')) document.getElementById('ap_sku').value = app.p_sku || '';
+                if(document.getElementById('ap_value')) document.getElementById('ap_value').value = app.prodValue || '';
+                
+                let viewAsset = document.getElementById('view-asset-product');
+                if (viewAsset) viewAsset.classList.add('active');
+            } else { 
+                if(document.getElementById('pl_custId')) document.getElementById('pl_custId').innerText = app.customerId || '---'; 
+                if(document.getElementById('pl_appId')) document.getElementById('pl_appId').innerText = app.appId || '---'; 
+                if(document.getElementById('pl_income')) document.getElementById('pl_income').innerText = '₹' + (app.income || 0); 
+                if(document.getElementById('pl_req_amt')) document.getElementById('pl_req_amt').innerText = '₹' + (app.plAmountReq || 0); 
+                
+                let plPurpEl = document.getElementById('pl_purpose');
+                if(plPurpEl) plPurpEl.value = app.plPurpose || 'Medical Emergency'; 
+                
+                let viewPL = document.getElementById('view-pl-product');
+                if (viewPL) viewPL.classList.add('active'); 
+            }
+        } catch (error) {
+            console.error(error);
+            uiAlert("Failed to load Underwriting screen. Reverting to Pipeline.", "SYSTEM ERROR");
+            document.getElementById('view-pipeline').classList.add('active');
         }
     }
 
-    // --- 4. UNDERWRITING ENTRY ---
     function toggleProductFields() { 
-        let cdType = document.getElementById('ap_cd_type');
-        if(!cdType) return;
-        let pOther = document.getElementById('p_other_sec');
-        let pSmart = document.getElementById('p_smartphone_sec');
-        if(pOther) pOther.className = cdType.value === 'Other' ? 'form-row' : 'hidden'; 
-        if(pSmart) pSmart.className = cdType.value === 'Smartphone' ? 'form-row' : 'hidden'; 
+        try {
+            let cdType = document.getElementById('ap_cd_type');
+            if(!cdType) return;
+            let pOther = document.getElementById('p_other_sec');
+            let pSmart = document.getElementById('p_smartphone_sec');
+            if(pOther) pOther.className = cdType.value === 'Other' ? 'form-row' : 'hidden'; 
+            if(pSmart) pSmart.className = cdType.value === 'Smartphone' ? 'form-row' : 'hidden'; 
+        } catch(e) {}
     }
     
     async function verifyDealer() {
@@ -811,9 +845,9 @@
         }
         saveDB(); await executeAutomatedPolicyEngine();
     }
+    
     async function submitPLToUnderwriting() { getApp().plPurpose = document.getElementById('pl_purpose').value; saveDB(); await executeAutomatedPolicyEngine(); }
 
-    // --- 5. MULTI-VARIATE ALGORITHM ENGINE (PAN-LOCKED CIBIL) ---
     async function executeAutomatedPolicyEngine() {
         await showSysLoader("EVALUATING MULTI-FACTOR RISK PROFILE...", 2500);
         const app = getApp();
@@ -865,7 +899,6 @@
         }
     }
 
-    // --- 6. STRUCTURING & CO-APPLICANT ---
     function openStructuring(app, defDpPercent, defApr, isForce = false) {
         app.status = 'APPROVED_STRUCTURING';
         document.getElementById('l_cibil').innerText = app.cibil + (app.hasCoApp ? ' (+CO)' : ''); 
@@ -1025,7 +1058,6 @@
         html2pdf().set({ margin: 10, filename: `Sanction_Letter_${app.appId}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(element).save();
     }
 
-    // --- 7. EXCEPTION DESK ---
     function renderExceptions() {
         const cont = document.getElementById('exception-list'); cont.innerHTML = ''; 
         const exceptions = db.filter(a => ['REJECTED', 'EXCEPTION_REQ'].includes(a.status));
@@ -1062,7 +1094,6 @@
         if(remarks) { setAppIdContext(id); getApp().overrideLog = remarks; await showSysLoader("OVERRIDING...", 1000); openStructuring(getApp(), 60, 33, true); }
     }
 
-    // --- 8. PORTFOLIO & CROSS SELL ---
     function renderPortfolio() {
         const cont = document.getElementById('portfolio-list'); cont.innerHTML = ''; const actives = db.filter(a => a.status === 'ACTIVE');
         if(!actives.length) return cont.innerHTML = '<div class="panel">Ledger empty.</div>';
