@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nest Finserv | DSA Core Module v7.0</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        /* Enterprise Fintech Theme */
+        :root {
+            --brand-primary: #0A2463; 
+            --brand-dark: #111827; 
+            --bg-color: #F3F4F6;
+            --surface: #FFFFFF;
+            --border-light: #E5E7EB;
+            --border-focus: #9CA3AF;
+            --text-main: #111827;
+            --text-muted: #4B5563;
+            --success: #059669;
+            --danger: #DC2626;
+            --warning: #D97706;
+        }
+
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
+        body { background-color: var(--bg-color); color: var(--text-main); font-size: 14px; padding-bottom: 70px; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+
+        .app-shell { max-width: 500px; margin: 0 auto; background: var(--bg-color); min-height: 100vh; position: relative; }
+        
+        header { background: var(--brand-primary); color: white; padding: 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.2);}
+        header h1 { font-size: 1.1rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+        .sys-time { font-size: 0.75rem; color: #9CA3AF; font-weight: 500;}
+
+        .nav-bar { position: fixed; bottom: 0; width: 100%; max-width: 500px; background: var(--surface); display: flex; border-top: 1px solid var(--border-light); z-index: 100; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;}
+        .nav-item { flex: 1; padding: 14px 0; text-align: center; font-size: 0.65rem; color: var(--text-muted); cursor: pointer; text-transform: uppercase; font-weight: 700; transition: 0.2s; letter-spacing: 0.5px;}
+        .nav-item.active { color: var(--brand-primary); border-bottom: 3px solid var(--brand-primary); background: #F9FAFB; color: var(--brand-dark);}
+
+        .view-container { display: none; padding: 16px; animation: fadeIn 0.2s ease; }
+        .view-container.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .panel { background: var(--surface); border: 1px solid var(--border-light); border-radius: 4px; padding: 16px; margin-bottom: 16px; }
+        .panel-header { font-size: 0.85rem; text-transform: uppercase; color: var(--text-main); font-weight: 800; margin-bottom: 16px; letter-spacing: 0.5px; border-bottom: 1px solid var(--border-light); padding-bottom: 8px;}
+
+        .form-row { margin-bottom: 16px; }
+        label { display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;}
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid var(--border-light); border-radius: 4px; font-size: 1rem; background: #F9FAFB; color: var(--text-main); outline: none; transition: 0.2s; font-family: inherit;}
+        input:focus, select:focus, textarea:focus { border-color: var(--brand-dark); background: #FFF; box-shadow: inset 0 0 0 1px var(--brand-dark);}
+        input[readonly], input[disabled], select[disabled], textarea[disabled] { background: #F3F4F6; color: #9CA3AF; border-color: #E5E7EB; cursor: not-allowed; }
+
+        .btn { width: 100%; padding: 14px; font-size: 0.9rem; font-weight: 700; border: none; border-radius: 4px; cursor: pointer; transition: 0.2s; margin-top: 8px; display: flex; justify-content: center; align-items: center; text-transform: uppercase; letter-spacing: 0.5px; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;}
+        .btn-black { background: var(--brand-dark); color: white; }
+        .btn-black:active { background: #333;}
+        .btn-success { background: var(--success); color: white; }
+        .btn-outline { background: transparent; border: 1px solid var(--border-focus); color: var(--text-main); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+
+        .hidden { display: none !important; }
+        .flex-row { display: flex; gap: 8px; align-items: center; }
+        .badge { padding: 4px 6px; border-radius: 2px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; display: inline-block; letter-spacing: 0.5px;}
+        .badge-pending { background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A;}
+        .badge-success { background: #D1FAE5; color: #047857; border: 1px solid #A7F3D0;}
+        .badge-danger { background: #FEE2E2; color: #B91C1C; border: 1px solid #FECACA;}
+        .badge-exception { background: #E0E7FF; color: #4338CA; border: 1px solid #C7D2FE;}
+        
+        .list-item { border: 1px solid var(--border-light); padding: 16px; margin-bottom: 12px; border-radius: 4px; background: #FFF; cursor: pointer; display: flex; justify-content: space-between; align-items: center;}
+        
+        .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; background: #F9FAFB; padding: 16px; border: 1px solid var(--border-light); border-radius: 4px; margin-bottom: 16px;}
+        .data-grid div span { display: block; color: var(--text-muted); font-size: 0.65rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;}
+        .data-grid div strong { color: var(--text-main); font-size: 1rem; font-weight: 700; margin-top: 4px; display: block;}
+
+        #sys-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; transition: opacity 0.3s; }
+        .spinner { border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid #FFF; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin-bottom: 16px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        #ui-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; justify-content: center; align-items: center; }
+        .ui-modal-box { background: white; width: 90%; max-width: 400px; border-radius: 4px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); animation: popIn 0.15s ease-out; }
+        .ui-modal-header { padding: 20px 20px 10px; font-weight: 800; font-size: 1rem; color: var(--text-main); text-align: center; text-transform: uppercase; letter-spacing: 1px;}
+        .ui-modal-body { padding: 0 20px 20px; font-size: 0.9rem; color: var(--text-muted); line-height: 1.6;}
+        .ui-modal-footer { padding: 16px; background: #F9FAFB; display: flex; gap: 10px; justify-content: center; border-top: 1px solid var(--border-light);}
+        .ui-modal-footer .btn { margin: 0; padding: 12px 24px; width: auto; font-size: 0.8rem;}
+
+        /* --- VIRTUAL CREDIT CARD UI --- */
+        .credit-card {
+            background: linear-gradient(135deg, #0A2463, #000000); 
+            border-radius: 12px; padding: 20px; color: white; position: relative;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3); overflow: hidden; margin-bottom: 20px;
+        }
+        .cc-bank { font-size: 0.75rem; font-weight: 800; letter-spacing: 1.5px; color: rgba(255,255,255,0.9); margin-bottom: 15px;}
+        .cc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;}
+        .cc-tier { font-size: 0.8rem; font-style: italic; letter-spacing: 1px; color: #E5E7EB;}
+        .cc-logo { font-weight: 800; font-size: 1.1rem; text-align: right; line-height: 1.1; letter-spacing: 1px;}
+        .cc-chip { width: 35px; height: 25px; background: linear-gradient(135deg, #e5c158, #b08d27); border-radius: 4px;}
+        .cc-number { font-family: monospace; font-size: 1.4rem; letter-spacing: 3px; margin: 15px 0 10px 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);}
+        .cc-bottom { display: flex; justify-content: space-between; align-items: flex-end;}
+        .cc-valid { font-size: 0.5rem; text-transform: uppercase; color: #D1D5DB;}
+        .cc-date { font-size: 0.8rem; font-family: monospace; letter-spacing: 1px;}
+        .cc-name { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px;}
+        .cc-network { display: flex; gap: -5px; }
+        .circle { width: 24px; height: 24px; border-radius: 50%; opacity: 0.8;}
+        .circle.red { background: #EB001B; transform: translateX(10px);}
+        .circle.yellow { background: #F79E1B; mix-blend-mode: multiply;}
+        .cc-blocked-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; justify-content:center; align-items:center; font-size:1.5rem; font-weight:bold; color:#FCA5A5; letter-spacing:2px; backdrop-filter: grayscale(1); z-index: 10;}
+
+        /* Off-Screen PDF Template */
+        #pdf-export-container { position: absolute; left: -9999px; top: 0; width: 800px; background: white; color: black; font-family: 'Times New Roman', Times, serif; }
+        .sanction-letter { padding: 40px; font-size: 13px; line-height: 1.6; }
+        .pdf-header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #000; padding-bottom: 15px;}
+        .pdf-header h1 { color: #000; font-size: 26px; margin: 0 0 5px 0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: bold;}
+        .pdf-header p { margin: 3px 0; font-size: 11px; color: #333; font-family: Arial, Helvetica, sans-serif;}
+        .pdf-title { text-align: center; font-weight: bold; font-size: 15px; margin: 25px 0; text-decoration: underline; text-transform: uppercase; letter-spacing: 1px;}
+        .pdf-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin: 30px 0; }
+        .pdf-table td { padding: 10px; border: 1px solid #000; }
+        .pdf-table td:first-child { font-weight: bold; width: 45%; }
+        .pdf-footer { margin-top: 60px; font-size: 12px; color: #000; }
+        .pdf-signature-block { margin-top: 40px; border-top: 1px solid #000; width: 220px; padding-top: 5px; font-weight: bold;}
+    </style>
+</head>
+<body>
+
+<div class="app-shell">
+    <header>
+        <div>
+            <h1>NEST FINSERV</h1>
+            <div class="sys-time">DSA Core Banking Module</div>
+        </div>
+        <div style="text-align: right;">
+            <div style="font-size: 0.65rem; color: #9CA3AF; text-transform:uppercase; letter-spacing:0.5px;">Active Session</div>
+            <div id="hdr-app-id" style="font-size: 0.85rem; font-weight: 700; color: #FFF; font-family:monospace;">---</div>
+        </div>
+    </header>
+
+    <div id="sys-loader" class="hidden">
+        <div class="spinner"></div>
+        <div id="loader-msg" style="font-size: 0.85rem; font-weight: 700; letter-spacing: 1.5px;">PROCESSING...</div>
+    </div>
+
+    <div id="ui-modal-overlay" class="hidden">
+        <div class="ui-modal-box">
+            <div class="ui-modal-header" id="ui-modal-title">SYSTEM PROMPT</div>
+            <div class="ui-modal-body" id="ui-modal-msg"></div>
+            <div class="ui-modal-footer" id="ui-modal-actions"></div>
+        </div>
+    </div>
+
+    <div id="view-create" class="view-container active">
+        <div class="panel">
+            <div class="panel-header">Origination Application</div>
+            <form id="form-create" onsubmit="event.preventDefault(); createProject();">
+                <div class="form-row">
+                    <label>Facility Type</label>
+                    <select id="c_loan_type" onchange="toggleLoanTypeFields()">
+                        <option value="CD">Consumer Durable (Mobile/Appliance)</option>
+                        <option value="Bike">Two Wheeler (Bike Finance)</option>
+                        <option value="PL">Personal Loan</option>
+                    </select>
+                </div>
+                <div class="form-row"><label>First Name</label><input type="text" id="c_fname" required></div>
+                <div class="form-row"><label>Last Name</label><input type="text" id="c_lname" required></div>
+                <div class="form-row"><label>Mobile Number</label><input type="tel" id="c_mobile" maxlength="10" required></div>
+                <div class="form-row"><label>Date of Birth</label><input type="date" id="c_dob" required></div>
+                
+                <div class="form-row">
+                    <label>Occupation Type</label>
+                    <select id="c_occ" onchange="toggleSalariedFields()">
+                        <option value="Student">Student</option>
+                        <option value="Salaried">Salaried</option>
+                        <option value="Self-Employed">Self-Employed</option>
+                    </select>
+                </div>
+                
+                <div id="salaried_fields" class="hidden">
+                    <div class="form-row"><label>Employee ID</label><input type="text" id="c_empId"></div>
+                    <div class="form-row"><label>Company Name</label><input type="text" id="c_company"></div>
+                </div>
+
+                <div class="form-row"><label>Full KYC Address</label><input type="text" id="c_address" required></div>
+                <div class="form-row"><label>Declared Monthly Income (₹)</label><input type="number" id="c_income" required></div>
+                
+                <div id="pl_amount_field" class="hidden form-row">
+                    <label>Requested Loan Amount (₹)</label>
+                    <input type="number" id="c_pl_amount">
+                </div>
+
+                <div class="form-row"><label>Aadhaar Number</label><input type="number" id="c_aadhaar" required></div>
+                <div class="form-row"><label>PAN Number</label><input type="text" id="c_pan" style="text-transform: uppercase;" required maxlength="10"></div>
+                
+                <button type="submit" class="btn btn-black">INITIALIZE PROJECT</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="view-pipeline" class="view-container">
+        <div class="panel-header">Pipeline Operations</div>
+        <div id="pipeline-list"></div>
+    </div>
+
+    <div id="view-kyc" class="view-container">
+        <button class="btn btn-outline" onclick="nav('view-pipeline')" style="margin-bottom:16px; width:auto; padding: 10px 16px; font-size:0.75rem;">BACK TO PIPELINE</button>
+        <div class="panel" id="kyc-customer-data"></div>
+        <div class="panel">
+            <div class="panel-header">KYC Gateway</div>
+            <button class="btn btn-black" id="btn-init-kyc" onclick="initiateKYC()">INITIATE E-KYC</button>
+            <div id="kyc-otp-section" class="hidden">
+                <div class="form-row"><label>Enter 6-Digit OTP</label><input type="number" id="kyc_otp"></div>
+                <button class="btn btn-success" onclick="verifyCKYC()">VERIFY CKYC</button>
+            </div>
+            <div id="kyc-success-section" class="hidden">
+                <div style="padding:16px; background:#D1FAE5; border:1px solid #34D399; border-radius:4px; color:#065F46; text-align:center; font-weight:700; margin-bottom:16px; font-family:monospace; font-size:1.1rem;">
+                    [ VALIDATED ] CKYC: <span id="lbl_ckyc"></span>
+                </div>
+                <button class="btn btn-black" onclick="proceedToUnderwritingFlow()">PROCEED TO UNDERWRITING</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-asset-product" class="view-container">
+        <div class="panel-header" id="asset_header_title">Asset Details</div>
+        <div class="panel">
+            <div class="data-grid" style="margin-bottom: 16px;">
+                <div><span>Customer ID</span><strong id="ap_custId" style="font-family:monospace;"></strong></div>
+                <div><span>App ID</span><strong id="ap_appId" style="font-family:monospace;"></strong></div>
+            </div>
+            
+            <div id="asset_cd_fields" class="hidden">
+                <div class="form-row">
+                    <label>Asset Type</label>
+                    <select id="ap_cd_type" onchange="autoSaveApp('p_type', this.value); toggleProductFields();"><option value="Smartphone">Smartphone</option><option value="Appliance">Appliance</option><option value="Other">Other</option></select>
+                </div>
+                <div class="form-row"><label>Model Name</label><input type="text" id="ap_cd_name" oninput="autoSaveApp('p_name', this.value)" placeholder="e.g. iPhone 15 Pro"></div>
+                <div class="form-row">
+                    <label>IMEI / Serial 1</label>
+                    <div class="flex-row">
+                        <input type="text" id="ap_cd_imei1" oninput="autoSaveApp('imei1', this.value)" style="flex: 1;">
+                        <button class="btn btn-outline" style="width:auto; margin-top:0;" onclick="let v = generateRandomString(15, true); document.getElementById('ap_cd_imei1').value = v; autoSaveApp('imei1', v);">GEN</button>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>IMEI / Serial 2</label>
+                    <div class="flex-row">
+                        <input type="text" id="ap_cd_imei2" oninput="autoSaveApp('imei2', this.value)" style="flex: 1;">
+                        <button class="btn btn-outline" style="width:auto; margin-top:0;" onclick="let v = generateRandomString(15, true); document.getElementById('ap_cd_imei2').value = v; autoSaveApp('imei2', v);">GEN</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="asset_bike_fields" class="hidden">
+                <div class="form-row"><label>Vehicle Make & Model</label><input type="text" id="ap_bike_name" oninput="autoSaveApp('p_name', this.value)" placeholder="e.g. Royal Enfield Classic 350"></div>
+                <div class="form-row">
+                    <label>Engine Number</label>
+                    <div class="flex-row">
+                        <input type="text" id="ap_bike_engine" oninput="autoSaveApp('engineNo', this.value)" style="flex: 1; text-transform:uppercase;">
+                        <button class="btn btn-outline" style="width:auto; margin-top:0;" onclick="let v = 'ENG'+generateRandomString(9, false); document.getElementById('ap_bike_engine').value = v; autoSaveApp('engineNo', v);">GEN</button>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>Chassis Number (VIN)</label>
+                    <div class="flex-row">
+                        <input type="text" id="ap_bike_chassis" oninput="autoSaveApp('chassisNo', this.value)" style="flex: 1; text-transform:uppercase;">
+                        <button class="btn btn-outline" style="width:auto; margin-top:0;" onclick="let v = 'ME3'+generateRandomString(14, false); document.getElementById('ap_bike_chassis').value = v; autoSaveApp('chassisNo', v);">GEN</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-row" style="margin-top:16px;">
+                <label>Dealer Code</label>
+                <div class="flex-row">
+                    <input type="text" id="ap_dealerId" oninput="autoSaveApp('p_dealerId', this.value)" placeholder="e.g. DT21011721" style="flex: 1;">
+                    <button class="btn btn-black" style="width:auto; margin-top:0;" onclick="verifyDealer()">VERIFY</button>
+                </div>
+                <div id="dealer-result" style="font-size:0.8rem; margin-top:8px; font-weight:700; text-transform:uppercase;"></div>
+            </div>
+
+            <div class="form-row"><label>Invoice Value / Ex-Showroom (₹)</label><input type="number" id="ap_value" oninput="autoSaveApp('prodValue', this.value)"></div>
+            <button class="btn btn-black" onclick="submitAssetToUnderwriting()">SUBMIT FOR UNDERWRITING</button>
+        </div>
+    </div>
+
+    <div id="view-pl-product" class="view-container">
+        <div class="panel-header">Personal Loan Underwriting</div>
+        <div class="panel">
+            <div class="data-grid" style="margin-bottom: 16px;">
+                <div><span>Customer ID</span><strong id="pl_custId" style="font-family:monospace;"></strong></div>
+                <div><span>App ID</span><strong id="pl_appId" style="font-family:monospace;"></strong></div>
+                <div><span>Income</span><strong id="pl_income"></strong></div>
+                <div><span>Req. Amount</span><strong id="pl_req_amt"></strong></div>
+            </div>
+            <div class="form-row">
+                <label>Purpose of Loan</label>
+                <select id="pl_purpose" onchange="autoSaveApp('plPurpose', this.value)">
+                    <option>Medical Emergency</option>
+                    <option>Home Renovation</option>
+                    <option>Education</option>
+                    <option>Wedding</option>
+                    <option>Debt Consolidation</option>
+                </select>
+            </div>
+            <button class="btn btn-black" onclick="submitPLToUnderwriting()">SUBMIT FOR UNDERWRITING</button>
+        </div>
+    </div>
+
+    <div id="view-exceptions" class="view-container">
+        <div class="panel-header" style="color:var(--brand-primary);">Exception & Override Desk</div>
+        <div id="exception-list"></div>
+    </div>
+
+    <div id="view-structure" class="view-container">
+        <div class="panel-header">Loan Structuring & Sanction</div>
+
+        <div class="panel">
+            <div style="background: #F9FAFB; border: 1px solid var(--border-light); padding: 16px; border-radius: 4px; margin-bottom: 20px;">
+                <div class="flex-row" style="justify-content: space-between; margin-bottom: 8px;">
+                    <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Requested Amount</span>
+                    <strong id="disp_req_amt" style="font-size:1rem; color:var(--text-main);">₹0</strong>
+                </div>
+                <div class="flex-row" style="justify-content: space-between;">
+                    <span style="font-size:0.75rem; font-weight:800; color:var(--brand-primary); text-transform:uppercase;">Max Eligible Limit</span>
+                    <strong id="disp_max_limit" style="font-size:1.2rem; color:var(--brand-primary);">₹0</strong>
+                </div>
+                <p style="font-size:0.65rem; color:#6B7280; margin-top:8px; font-style:italic;">*Limits secured via Multi-Variate Age/Income/CIBIL algorithms.</p>
+            </div>
+
+            <button id="btn_req_exception" class="btn btn-outline" style="margin-bottom: 10px; font-size:0.75rem; border-color:var(--warning); color:var(--warning);" onclick="requestLimitException()">[ ! ] REQUEST LIMIT OVERRIDE</button>
+            <button id="btn_add_coapp" class="btn btn-outline hidden" style="margin-bottom: 20px; font-size:0.75rem; border-color:var(--success); color:var(--success);" onclick="showCoAppForm()">[ + ] ADD CO-APPLICANT TO ENHANCE LIMIT</button>
+
+            <div id="co_app_form" class="hidden panel" style="border-color: var(--success); background: #F0FDF4; margin-bottom:20px;">
+                <h4 style="color:var(--success); font-size:0.8rem; margin-bottom:12px; font-weight:800;">CO-APPLICANT DETAILS</h4>
+                <div class="form-row"><label>Full Name</label><input type="text" id="co_name"></div>
+                <div class="form-row"><label>PAN Number</label><input type="text" id="co_pan" style="text-transform:uppercase;"></div>
+                <div class="form-row"><label>Monthly Income</label><input type="number" id="co_income"></div>
+                <button class="btn btn-success" onclick="processCoApplicant()">VERIFY & ADD LIMIT</button>
+            </div>
+
+            <div class="form-row"><label id="lbl_cost">ASSET COST (INR)</label><input type="number" id="l_cost" oninput="calcEMI()"></div>
+            <div id="sec_dp" class="form-row"><label>Downpayment (INR)</label><input type="number" id="l_dp" oninput="calcEMI()"></div>
+            <div class="form-row"><label>Interest Rate (% APR)</label><input type="number" id="l_apr" oninput="calcEMI()"></div>
+            <div class="form-row"><label>Tenure (Months)</label><input type="number" id="l_tenure" value="12" oninput="calcEMI()"></div>
+            
+            <div style="padding: 20px 0; border-bottom: 1px solid var(--border-light); border-top: 1px solid var(--border-light); margin: 20px 0;">
+                <h4 style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Monthly EMI</h4>
+                <h1 id="calc_emi" style="font-size: 2.5rem; color: var(--brand-primary); font-weight: 800; letter-spacing: -1px; margin-bottom: 16px;">₹0.00</h1>
+                
+                <div style="display:flex; justify-content:space-between;">
+                    <div><h4 style="font-size: 0.65rem; color: var(--text-muted); text-transform:uppercase; font-weight:700;">Total Interest</h4><strong id="calc_i" style="font-size: 1rem;">₹0.00</strong></div>
+                    <div style="text-align:right;"><h4 style="font-size: 0.65rem; color: var(--text-muted); text-transform:uppercase; font-weight:700;" id="lbl_disb">Disbursement</h4><strong id="calc_disb" style="font-size: 1rem;">₹0.00</strong></div>
+                </div>
+            </div>
+
+            <div class="data-grid" style="background:#F3F4F6; border-color:#E5E7EB;">
+                <div><span>Bureau Score</span><strong id="l_cibil"></strong></div>
+                <div><span>Risk Tier</span><strong id="l_tier"></strong></div>
+            </div>
+            
+            <div class="form-row"><label>Loan Start Date</label><input type="date" id="l_start" oninput="autoSaveApp('l_start', this.value)"></div>
+            <div class="form-row"><label>Monthly EMI Cycle (1-31)</label><input type="number" id="l_emi_date" min="1" max="31" oninput="autoSaveApp('l_emi_date', this.value)"></div>
+            
+            <h4 style="font-size: 0.8rem; margin: 24px 0 16px; text-transform:uppercase; font-weight:800; border-bottom: 1px solid var(--border-light); padding-bottom: 8px;">Banking & Mandate</h4>
+            <div class="form-row"><label>Bank Name</label><input type="text" id="b_name" placeholder="e.g. HDFC Bank" oninput="autoSaveApp('bankName', this.value)"></div>
+            <div class="form-row"><label>Account Number</label><input type="number" id="b_acc" oninput="autoSaveApp('bankAcc', this.value)"></div>
+            <div class="form-row"><label>IFSC Code</label><input type="text" id="b_ifsc" style="text-transform: uppercase;" oninput="autoSaveApp('bankIfsc', this.value.toUpperCase())"></div>
+            <div class="form-row">
+                <label>e-Mandate ID</label>
+                <div class="flex-row">
+                    <input type="text" id="b_mandate" readonly style="flex:1;">
+                    <button class="btn btn-outline" style="width:auto; margin-top:0;" onclick="generateMandateWithOTP()">GENERATE</button>
+                </div>
+            </div>
+
+            <div style="margin-top:24px;">
+                <button class="btn btn-success" onclick="sanctionAndDisburse()">AUTHORIZE & DISBURSE</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-portfolio" class="view-container">
+        <div class="panel-header">Master Ledger</div>
+        <div id="portfolio-list"></div>
+    </div>
+
+    <div id="view-active-edit" class="view-container">
+        <button class="btn btn-outline" onclick="nav('view-portfolio')" style="margin-bottom:16px; width:auto; padding: 10px 16px; font-size:0.75rem;">BACK TO LEDGER</button>
+        <div class="panel-header">Account Management</div>
+        <div class="panel" style="border-top: 4px solid var(--brand-primary);">
+            
+            <div class="data-grid" style="background:#F9FAFB; margin-bottom: 24px;">
+                <div><span>Customer Name</span><strong id="e_name" style="text-transform:uppercase;"></strong></div>
+                <div><span>Sanctioned Amt</span><strong id="e_sanction_amt"></strong></div>
+                <div><span>App ID</span><strong id="e_app_id" style="font-family:monospace;"></strong></div>
+                <div><span>Loan A/C</span><strong id="e_loan_id" style="color:var(--brand-primary); font-family:monospace;"></strong></div>
+            </div>
+
+            <div id="cc_module" style="margin-bottom: 30px;">
+                <h4 style="font-size: 0.8rem; margin: 0 0 16px; text-transform:uppercase; font-weight:800; border-bottom: 1px solid var(--border-light); padding-bottom: 8px;">Pre-Approved Offers & Cards</h4>
+                
+                <div id="cc_offer_banner" class="hidden" style="background:#F0FDF4; border:1px solid #86EFAC; padding:16px; border-radius:4px; text-align:center;">
+                    <div style="font-weight:800; color:#065F46; font-size:0.9rem; margin-bottom:8px;">SURPLUS LIMIT AVAILABLE: <span id="cc_surplus_amt"></span></div>
+                    <p style="font-size:0.75rem; color:#047857; margin-bottom:16px;">Customer qualifies for additional facilities.</p>
+                    <div id="cc_offer_banner_actions" style="display:flex; flex-direction:column; gap:8px;">
+                        <button class="btn btn-black" onclick="issueCreditCard()">ISSUE CO-BRANDED CREDIT CARD</button>
+                        <button class="btn btn-outline" style="border-color:var(--brand-primary); color:var(--brand-primary); margin-top:0;" onclick="showCrossSellPLForm()">ISSUE PERSONAL LOAN (TOP-UP)</button>
+                    </div>
+
+                    <div id="cross_sell_pl_form" class="hidden" style="background:#FFFFFF; border:1px solid #CBD5E1; padding:16px; border-radius:4px; margin-top:16px; text-align:left;">
+                        <h4 style="color:var(--brand-primary); font-size:0.8rem; margin-bottom:12px; font-weight:800;">TOP-UP PERSONAL LOAN</h4>
+                        <div class="form-row"><label>Amount (Max: <span id="cs_pl_max"></span>)</label><input type="number" id="cs_pl_amt"></div>
+                        <div class="form-row">
+                            <label>Purpose</label>
+                            <select id="cs_pl_purpose">
+                                <option>Medical Emergency</option><option>Home Renovation</option><option>Education</option><option>Wedding</option><option>Debt Consolidation</option><option>Business Expansion</option>
+                            </select>
+                        </div>
+                        <div class="form-row"><label>Tenure (Months)</label><input type="number" id="cs_pl_tenure" value="12"></div>
+                        <button class="btn btn-black" onclick="disburseCrossSellPL()">AUTHORIZE PL DISBURSEMENT</button>
+                    </div>
+                </div>
+
+                <div id="cc_active_card" class="hidden">
+                    <div class="credit-card">
+                        <div id="cc_block_overlay" class="cc-blocked-overlay hidden">BLOCKED</div>
+                        <div class="cc-bank">NEST SMALL FINANCE BANK</div>
+                        <div class="cc-top">
+                            <div class="cc-tier">Platinum</div>
+                            <div class="cc-logo">NEST<br>FINSERV</div>
+                        </div>
+                        <div class="cc-chip"></div>
+                        <div class="cc-number" id="cc_num_display">5369 0700 1234 5678</div>
+                        <div class="cc-bottom">
+                            <div>
+                                <div class="cc-valid">Valid Thru</div>
+                                <div class="cc-date">12/28</div>
+                                <div class="cc-name" id="cc_name_display">JOHN DOE</div>
+                            </div>
+                            <div class="cc-network">
+                                <div class="circle red"></div>
+                                <div class="circle yellow"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="data-grid" style="background:#FFFBEB; border-color:#FDE68A;">
+                        <div><span>Card Limit</span><strong id="cc_limit_display" style="color:#B45309;">₹0</strong></div>
+                        <div><span>Status</span><strong id="cc_status_display" style="color:#059669;">ACTIVE</strong></div>
+                    </div>
+                    
+                    <div class="flex-row">
+                        <button class="btn btn-outline" style="flex:1; font-size:0.75rem;" onclick="changeCardLimit()">ADJUST LIMIT</button>
+                        <button class="btn btn-danger" style="flex:1; font-size:0.75rem;" id="btn_toggle_block" onclick="toggleCardBlock()">BLOCK CARD</button>
+                    </div>
+                </div>
+
+                <div id="pl_active_cross_sell" class="hidden" style="margin-top: 16px; padding:16px; background:#F8FAFC; border:1px solid #CBD5E1; border-radius:4px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span style="font-weight:800; color:var(--brand-primary);">PERSONAL LOAN (TOP-UP)</span>
+                        <span class="badge badge-success">ACTIVE</span>
+                    </div>
+                    <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:4px;">Purpose: <strong style="color:var(--text-main);" id="pl_cross_purpose">-</strong></div>
+                    <div class="data-grid" style="margin-bottom:0; padding:10px;">
+                        <div><span>Disbursed</span><strong id="pl_cross_amt">₹0</strong></div>
+                        <div><span>EMI</span><strong id="pl_cross_emi">₹0</strong></div>
+                    </div>
+                </div>
+            </div>
+
+            <form id="form-active-edit" onsubmit="event.preventDefault(); saveActiveEdit();">
+                <div class="form-row"><label>Mobile</label><input type="tel" id="e_mobile" disabled></div>
+                <div class="form-row"><label>Full Address</label><textarea id="e_address" rows="2" disabled></textarea></div>
+                
+                <h4 style="font-size: 0.8rem; margin: 24px 0 16px; text-transform:uppercase; font-weight:800; border-bottom: 1px solid var(--border-light); padding-bottom: 8px;">Facility / Asset Details</h4>
+                <div id="edit_asset_sec_cd" class="hidden">
+                    <div class="form-row"><label>Dealer Code / Name</label><input type="text" id="e_cd_dealer" disabled></div>
+                    <div class="form-row"><label>Model Name</label><input type="text" id="e_cd_name" disabled></div>
+                    <div class="form-row"><label>IMEI 1</label><input type="text" id="e_cd_imei1" disabled></div>
+                    <div class="form-row"><label>IMEI 2</label><input type="text" id="e_cd_imei2" disabled></div>
+                </div>
+                <div id="edit_asset_sec_bike" class="hidden">
+                    <div class="form-row"><label>Dealer Code / Name</label><input type="text" id="e_bike_dealer" disabled></div>
+                    <div class="form-row"><label>Vehicle Make & Model</label><input type="text" id="e_bike_name" disabled></div>
+                    <div class="form-row"><label>Engine Number</label><input type="text" id="e_bike_engine" disabled></div>
+                    <div class="form-row"><label>Chassis Number</label><input type="text" id="e_bike_chassis" disabled></div>
+                </div>
+                <div id="edit_asset_sec_pl" class="hidden">
+                    <div class="form-row"><label>Loan Purpose</label><input type="text" id="e_pl_purpose" disabled></div>
+                </div>
+
+                <h4 style="font-size: 0.8rem; margin: 24px 0 16px; text-transform:uppercase; font-weight:800; border-bottom: 1px solid var(--border-light); padding-bottom: 8px;">Bank Mandate</h4>
+                <div class="form-row"><label>Bank Name</label><input type="text" id="e_b_name" disabled></div>
+                <div class="form-row"><label>Account Number</label><input type="number" id="e_b_acc" disabled></div>
+                <div class="form-row"><label>IFSC Code</label><input type="text" id="e_b_ifsc" disabled style="text-transform:uppercase;"></div>
+
+                <div id="edit_actions" style="margin-top: 24px;">
+                    <button type="button" class="btn btn-outline" style="border-color:var(--brand-primary); color:var(--brand-primary);" onclick="requestForceChange()">REQUEST LEDGER UNLOCK</button>
+                </div>
+                <div id="save_actions" class="hidden" style="margin-top: 24px;">
+                    <button type="submit" class="btn btn-success">COMMIT CHANGES TO LEDGER</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="view-search" class="view-container">
+        <div class="panel-header">Database Query</div>
+        <div class="panel">
+            <div class="form-row"><input type="text" id="search_query" placeholder="Enter ID or Name..."></div>
+            <button class="btn btn-black" onclick="performSearch()">EXECUTE SEARCH</button>
+        </div>
+        <div id="search-results"></div>
+    </div>
+
+    <nav class="nav-bar">
+        <div class="nav-item active" onclick="nav('view-create', this)">Create</div>
+        <div class="nav-item" onclick="nav('view-pipeline', this)">Pipeline</div>
+        <div class="nav-item" onclick="nav('view-exceptions', this)">Exceptions</div>
+        <div class="nav-item" onclick="nav('view-portfolio', this)">Ledger</div>
+        <div class="nav-item" onclick="nav('view-search', this)">Search</div>
+    </nav>
+</div>
+
+<div id="pdf-export-container">
+    <div class="sanction-letter" id="sanction-letter-template">
+        <div class="pdf-header">
+            <h1>NEST FINSERV LTD.</h1>
+            <p>RBI Reg NBFC: Digital Lending | CIN: U65100CT1985PLC002706</p>
+            <p>Corporate Office: 153, Karkari, Paschim Teliamura, Khowai Tripura 799205</p>
+        </div>
+        <div class="pdf-title">SANCTION LETTER</div>
+        
+        <div class="pdf-row"><strong>Date:</strong> <span id="pdf_date"></span></div>
+        <div class="pdf-row"><strong>Application No:</strong> <span id="pdf_app"></span></div>
+        <div class="pdf-row"><strong>Name:</strong> <span id="pdf_name"></span></div>
+        <div class="pdf-row"><strong>Address:</strong> <span id="pdf_add"></span></div>
+        <div class="pdf-row"><strong>Phone No:</strong> <span id="pdf_mob"></span></div>
+        <br>
+        <div class="pdf-row"><strong>Subject:</strong> <span id="pdf_sub"></span></div>
+        <br>
+        <p>Dear Sir/Madam,</p>
+        <p>We thank you for choosing Nest Finserv Limited as your financial partner. With reference to your loan application, we are pleased to offer you the loan as per the below mentioned terms and conditions:</p>
+        <br>
+        <p><strong>1. Particulars of Loan Sanctioned</strong></p>
+        <table class="pdf-table">
+            <tr><td>Loan Type</td><td id="pdf_t_type"></td></tr>
+            <tr><td>Sanction Amount (Total)</td><td id="pdf_t_amt"></td></tr>
+            <tr><td>Loan Tenor</td><td id="pdf_t_tenor"></td></tr>
+            <tr><td>Rate of Interest (APR)</td><td id="pdf_t_apr"></td></tr>
+            <tr><td>Monthly EMI</td><td id="pdf_t_emi"></td></tr>
+            <tr><td>Payment Mode</td><td>e-Mandate / NACH</td></tr>
+            <tr><td>Processing Fees</td><td id="pdf_t_pf"></td></tr>
+            <tr><td>Disbursement Amount</td><td id="pdf_t_disb"></td></tr>
+            <tr id="pdf_tr_imei" style="display:none;"><td>Asset IMEI/Serial</td><td id="pdf_t_imei"></td></tr>
+            <tr id="pdf_tr_bike" style="display:none;"><td>Engine & Chassis No.</td><td id="pdf_t_bike"></td></tr>
+        </table>
+        
+        <p style="font-size: 11px;">* Overdue charge includes Delayed Interest and Late Penalty as stipulated in the Master Loan Agreement.</p>
+        <p style="font-size: 11px;">* The company reserves the right to cancel the Application on valid grounds before the disbursement of Loan Amount.</p>
+        
+        <div class="pdf-footer">
+            <div class="pdf-signature-block">
+                Authorized Signatory<br>
+                Nest Finserv Ltd.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- STATE MANAGEMENT & AUTO-SAVE CORE ---
+    let db = JSON.parse(localStorage.getItem('nestFinservDB')) || [];
+    let currentAppId = localStorage.getItem('nestCurrentAppId') || null;
+    let draftApp = JSON.parse(localStorage.getItem('nestDraftApp')) || {};
+    let cibilRegistry = JSON.parse(localStorage.getItem('nestCibilRegistry')) || {}; // PERSISTENT CIBIL BY PAN
+
+    function saveDB() { localStorage.setItem('nestFinservDB', JSON.stringify(db)); }
+    function setAppIdContext(id) { 
+        currentAppId = id; 
+        if(id) localStorage.setItem('nestCurrentAppId', id); 
+        else localStorage.removeItem('nestCurrentAppId');
+        document.getElementById('hdr-app-id').innerText = id || "---"; 
+    }
+    function getApp() { return db.find(a => a.appId === currentAppId) || {}; }
+
+    // Instant Pipeline Auto-Saver
+    function autoSaveApp(key, value) {
+        if(!currentAppId) return;
+        const app = getApp();
+        app[key] = value;
+        saveDB();
+    }
+
+    const DEALERS = { "DT21011721": "Maa Electronics", "DT21011722": "A to Z Mobile", "DT21011723": "Shani Electronis", "DT21011724": "DEEP Mobiles", "DT210117": "Shankar Mobiles", "DT21011725": "Sengupta Motors", "DT21011726": "Chowdhury Tvs" };
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const genId = prefix => prefix + Math.floor(Math.random() * 900000 + 100000);
+    const getRandInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+    function generateRandomString(length, numericOnly = false) {
+        let result = '';
+        const characters = numericOnly ? '0123456789' : 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        for (let i = 0; i < length; i++) { result += characters.charAt(Math.floor(Math.random() * characters.length)); }
+        return result;
+    }
+
+    async function showSysLoader(msg, durationMs) {
+        document.getElementById('loader-msg').innerText = msg;
+        document.getElementById('sys-loader').classList.remove('hidden');
+        if (durationMs) { await sleep(durationMs); document.getElementById('sys-loader').classList.add('hidden'); }
+    }
+
+    // --- FORMAL MODAL ENGINE ---
+    function uiAlert(msg, title = "SYSTEM NOTIFICATION") {
+        return new Promise(resolve => {
+            document.getElementById('ui-modal-title').innerText = title;
+            document.getElementById('ui-modal-msg').innerHTML = msg;
+            document.getElementById('ui-modal-actions').innerHTML = `<button class="btn btn-black" style="font-size:0.8rem;">ACKNOWLEDGE</button>`;
+            const overlay = document.getElementById('ui-modal-overlay');
+            overlay.classList.remove('hidden');
+            document.querySelector('#ui-modal-actions button').onclick = () => { overlay.classList.add('hidden'); resolve(); };
+        });
+    }
+
+    function uiPromptRemarks(msg, title = "AUTHORIZATION REQUIRED", btnText = "AUTHORIZE", inputType = "textarea") {
+        return new Promise(resolve => {
+            document.getElementById('ui-modal-title').innerText = title;
+            let inputHTML = inputType === 'textarea' 
+                ? `<textarea id="prompt_remarks" placeholder="Enter formal remarks..." rows="3" style="width:100%;"></textarea>`
+                : `<input type="${inputType}" id="prompt_remarks" placeholder="Enter valid data..." style="width:100%;">`;
+                
+            document.getElementById('ui-modal-msg').innerHTML = `${msg}<br><br>${inputHTML}`;
+            document.getElementById('ui-modal-actions').innerHTML = `
+                <button class="btn btn-outline" id="btn-cancel" style="font-size:0.8rem;">CANCEL</button>
+                <button class="btn btn-danger" id="btn-confirm" style="font-size:0.8rem;">${btnText}</button>
+            `;
+            const overlay = document.getElementById('ui-modal-overlay');
+            overlay.classList.remove('hidden');
+            
+            document.getElementById('btn-confirm').onclick = () => { 
+                const val = document.getElementById('prompt_remarks').value.trim();
+                if(!val) return alert("Compliance Error: Input is mandatory.");
+                overlay.classList.add('hidden'); resolve(val); 
+            };
+            document.getElementById('btn-cancel').onclick = () => { overlay.classList.add('hidden'); resolve(null); };
+        });
+    }
+
+    // Bind Draft logic specifically on load to form elements
+    window.onload = () => { 
+        if (currentAppId) setAppIdContext(currentAppId); 
+        document.querySelectorAll('#form-create input, #form-create select').forEach(el => {
+            el.addEventListener('input', (e) => {
+                draftApp[e.target.id] = e.target.value;
+                localStorage.setItem('nestDraftApp', JSON.stringify(draftApp));
+            });
+        });
+    };
+
+    async function nav(viewId, navBtn = null) {
+        try {
+            await showSysLoader("INITIALIZING...", 300);
+            document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            if(navBtn) { document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active')); navBtn.classList.add('active'); }
+            
+            if(viewId === 'view-create') {
+                Object.keys(draftApp).forEach(key => { if(document.getElementById(key)) document.getElementById(key).value = draftApp[key]; });
+                toggleLoanTypeFields(); toggleSalariedFields(); 
+            }
+
+            if(viewId === 'view-pipeline') renderPipeline();
+            if(viewId === 'view-exceptions') renderExceptions();
+            if(viewId === 'view-portfolio') renderPortfolio();
+            window.scrollTo(0, 0);
+        } catch(e) {
+            console.error("Navigation error:", e);
+        }
+    }
+
+    // --- 1. CREATE ---
+    function toggleLoanTypeFields() { document.getElementById('pl_amount_field').className = document.getElementById('c_loan_type').value === 'PL' ? 'form-row' : 'hidden'; }
+    function toggleSalariedFields() { document.getElementById('salaried_fields').className = document.getElementById('c_occ').value === 'Salaried' ? '' : 'hidden'; }
+
+    async function createProject() {
+        try {
+            const type = document.getElementById('c_loan_type').value;
+            const plAmt = document.getElementById('c_pl_amount').value;
+            if (type === 'PL' && !plAmt) return uiAlert("Requested Loan Amount missing.", "INPUT ERROR");
+
+            const app = {
+                appId: genId('APP'), loanType: type, plAmountReq: plAmt,
+                fname: document.getElementById('c_fname').value, lname: document.getElementById('c_lname').value,
+                mobile: document.getElementById('c_mobile').value, dob: document.getElementById('c_dob').value,
+                occ: document.getElementById('c_occ').value, address: document.getElementById('c_address').value,
+                income: parseFloat(document.getElementById('c_income').value), pan: document.getElementById('c_pan').value.toUpperCase(),
+                status: 'PENDING_KYC', dealerVerified: false, hasCoApp: false
+            };
+            await showSysLoader("COMMITTING DATA...", 800);
+            db.push(app); saveDB(); 
+            
+            // STRICT PURGE DRAFT ON SUCCESS
+            draftApp = {}; localStorage.removeItem('nestDraftApp');
+            document.getElementById('form-create').reset();
+            document.querySelectorAll('#form-create input').forEach(i => i.value = ''); 
+            document.getElementById('c_loan_type').value = 'CD'; document.getElementById('c_occ').value = 'Student';
+            toggleLoanTypeFields(); toggleSalariedFields();
+            
+            await uiAlert(`Application recorded successfully.<br><br>System ID: <b>${app.appId}</b>`, "OPERATION SUCCESSFUL");
+            setAppIdContext(app.appId); nav('view-pipeline', document.querySelectorAll('.nav-item')[1]);
+        } catch(e) {
+            console.error(e);
+            alert("System Error: " + e.message);
+        }
+    }
+
+    // --- 2. PIPELINE ---
+    function renderPipeline() {
+        const cont = document.getElementById('pipeline-list'); cont.innerHTML = '';
+        const pending = db.filter(a => ['PENDING_KYC', 'PENDING_UW', 'APPROVED_STRUCTURING'].includes(a.status));
+        if(!pending.length) return cont.innerHTML = '<div class="panel">Pipeline empty.</div>';
+        pending.forEach(app => {
+            let statusClass = app.status === 'APPROVED_STRUCTURING' ? 'badge-pending' : 'badge-success';
+            let statusText = app.status === 'APPROVED_STRUCTURING' ? 'ACTION REQ' : app.status.replace('_',' ');
+            cont.innerHTML += `<div class="list-item" onclick="openPipelineRecord('${app.appId}')">
+                <div><span class="badge badge-type">${app.loanType}</span><div style="font-weight:800;">${app.fname} ${app.lname}</div><div style="font-size:0.75rem; color:var(--text-muted); font-family:monospace; margin-top:2px;">${app.appId}</div></div>
+                <span class="badge ${app.status==='PENDING_KYC'?'badge-pending':statusClass}">${statusText}</span></div>`;
+        });
+    }
+
+    async function openPipelineRecord(id) {
+        await showSysLoader("RETRIEVING RECORD...", 500); setAppIdContext(id); const app = getApp();
+        if (app.status === 'PENDING_KYC') {
+            document.getElementById('kyc-customer-data').innerHTML = `<div class="data-grid"><div><span>Facility</span><strong>${app.loanType}</strong></div><div><span>Name</span><strong>${app.fname} ${app.lname}</strong></div></div>`;
+            document.getElementById('btn-init-kyc').classList.remove('hidden'); document.getElementById('kyc_otp').value = ''; 
+            document.getElementById('kyc-otp-section').classList.add('hidden'); document.getElementById('kyc-success-section').classList.add('hidden');
+            nav('view-kyc');
+        } else if (app.status === 'PENDING_UW') { proceedToUnderwritingFlow(); }
+        else if (app.status === 'APPROVED_STRUCTURING') { openStructuring(app, app.loanDetails?.dpP || 20, app.loanDetails?.apr || 12, app.forceUnderwritten); }
+    }
+
+    // --- 3. KYC ---
+    async function initiateKYC() { document.getElementById('btn-init-kyc').classList.add('hidden'); await sleep(800); document.getElementById('kyc-otp-section').classList.remove('hidden'); }
+    async function verifyCKYC() {
+        if(document.getElementById('kyc_otp').value.length !== 6) return uiAlert("6-digit OTP required for authentication.", "VERIFICATION FAILED");
+        await showSysLoader("AUTHENTICATING...", 1200);
+        const app = getApp(); app.ckyc = genId('CKYC'); app.customerId = genId('CUST'); app.status = 'PENDING_UW'; saveDB();
+        document.getElementById('kyc-otp-section').classList.add('hidden'); document.getElementById('lbl_ckyc').innerText = app.ckyc; document.getElementById('kyc-success-section').classList.remove('hidden');
+    }
+
+    function proceedToUnderwritingFlow() {
+        const app = getApp(); document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+        
+        document.getElementById('asset_cd_fields').classList.add('hidden'); document.getElementById('asset_bike_fields').classList.add('hidden');
+        
+        if(app.loanType === 'CD' || app.loanType === 'Bike') { 
+            document.getElementById('ap_custId').innerText = app.customerId; document.getElementById('ap_appId').innerText = app.appId; 
+            
+            if(app.loanType === 'CD') {
+                document.getElementById('asset_header_title').innerText = "Consumer Durable Details";
+                document.getElementById('asset_cd_fields').classList.remove('hidden');
+                document.getElementById('ap_cd_type').value = app.p_type || 'Smartphone'; toggleProductFields();
+                document.getElementById('ap_os').value = app.p_os || 'Android';
+                document.getElementById('ap_other_name').value = app.p_other_name || ''; 
+                document.getElementById('ap_cd_name').value = app.p_name || ''; 
+                document.getElementById('ap_cd_imei1').value = app.imei1 || ''; 
+                document.getElementById('ap_cd_imei2').value = app.imei2 || '';
+            } else {
+                document.getElementById('asset_header_title').innerText = "Two Wheeler Details";
+                document.getElementById('asset_bike_fields').classList.remove('hidden');
+                document.getElementById('ap_bike_name').value = app.p_name || ''; 
+                document.getElementById('ap_bike_engine').value = app.engineNo || ''; 
+                document.getElementById('ap_bike_chassis').value = app.chassisNo || '';
+            }
+
+            document.getElementById('ap_dealerId').value = app.p_dealerId || ''; 
+            document.getElementById('dealer-result').innerText = app.dealerVerified ? `[ VERIFIED ] ${app.dealerName}` : '';
+            document.getElementById('ap_sku').value = app.p_sku || '';
+            document.getElementById('ap_value').value = app.prodValue || '';
+            document.getElementById('view-asset-product').classList.add('active'); 
+        } else { 
+            document.getElementById('pl_custId').innerText = app.customerId; document.getElementById('pl_appId').innerText = app.appId; 
+            document.getElementById('pl_income').innerText = '₹'+app.income; document.getElementById('pl_req_amt').innerText = '₹'+app.plAmountReq; 
+            document.getElementById('pl_purpose').value = app.plPurpose || 'Medical Emergency'; document.getElementById('view-pl-product').classList.add('active'); 
+        }
+    }
+
+    // --- 4. UNDERWRITING ENTRY ---
+    function toggleProductFields() { document.getElementById('p_other_sec').className = document.getElementById('ap_cd_type').value === 'Other' ? 'form-row' : 'hidden'; document.getElementById('p_smartphone_sec').className = document.getElementById('ap_cd_type').value === 'Smartphone' ? 'form-row' : 'hidden'; }
+    async function verifyDealer() {
+        const did = document.getElementById('ap_dealerId').value.trim(); const res = document.getElementById('dealer-result');
+        await sleep(600);
+        if(DEALERS[did]) { res.innerHTML = `[ VERIFIED ] ${DEALERS[did]}`; res.style.color = 'var(--success)'; getApp().dealerVerified = true; getApp().dealerName = DEALERS[did]; autoSaveApp('dealerVerified', true); autoSaveApp('dealerName', DEALERS[did]); }
+        else { res.innerHTML = `[ VERIFICATION FAILED ]`; res.style.color = 'var(--danger)'; getApp().dealerVerified = false; }
+    }
+    
+    async function submitAssetToUnderwriting() {
+        const app = getApp(); if(!app.dealerVerified) return uiAlert("Dealer ID must be verified.", "COMPLIANCE ERROR");
+        app.prodValue = parseFloat(document.getElementById('ap_value').value); if(!app.prodValue) return uiAlert("Invoice value missing.", "VALIDATION ERROR");
+        
+        if (app.loanType === 'CD') {
+            app.p_name = document.getElementById('ap_cd_name').value;
+            app.imei1 = document.getElementById('ap_cd_imei1').value;
+            app.imei2 = document.getElementById('ap_cd_imei2').value;
+        } else if (app.loanType === 'Bike') {
+            app.p_name = document.getElementById('ap_bike_name').value;
+            app.engineNo = document.getElementById('ap_bike_engine').value;
+            app.chassisNo = document.getElementById('ap_bike_chassis').value;
+        }
+        saveDB(); await executeAutomatedPolicyEngine();
+    }
+    async function submitPLToUnderwriting() { getApp().plPurpose = document.getElementById('pl_purpose').value; saveDB(); await executeAutomatedPolicyEngine(); }
+
+    // --- 5. MULTI-VARIATE ALGORITHM ENGINE (PAN-LOCKED CIBIL) ---
+    async function executeAutomatedPolicyEngine() {
+        await showSysLoader("EVALUATING MULTI-FACTOR RISK PROFILE...", 2500);
+        const app = getApp();
+        
+        let cibil;
+        if(cibilRegistry[app.pan]) {
+            cibil = cibilRegistry[app.pan];
+        } else {
+            cibil = Math.random() <= 0.70 ? getRandInt(700, 800) : getRandInt(350, 699); 
+            cibilRegistry[app.pan] = cibil;
+            localStorage.setItem('nestCibilRegistry', JSON.stringify(cibilRegistry));
+        }
+
+        let code, status, reason = "", dpP = 0, apr = 0;
+        const age = (new Date() - new Date(app.dob)) / (1000 * 60 * 60 * 24 * 365.25);
+        let baseMult = 0;
+
+        if (cibil < 400) { code = 'XX'; status = 'REJECTED'; reason = `SEVERE DEROGATORY (${cibil})`; baseMult = 0; }
+        else if (cibil <= 600) { code = 'VR'; status = 'REJECTED'; reason = `BUREAU DECLINE: Score (${cibil})`; baseMult = 0; }
+        else if (cibil <= 649) { code = 'GR'; status = 'REJECTED_GR'; reason = `SUB-PRIME HIGH RISK (${cibil})`; baseMult = 0.2; }
+        else if (cibil <= 699) { code = 'GR'; status = 'REJECTED_GR'; reason = `SUB-PRIME (${cibil}) - Structuring Req.`; baseMult = 0.5; }
+        else if (cibil <= 729) { code = 'AR'; status = 'APPROVED'; dpP = 40; apr = 18; baseMult = 2.5; }
+        else if (cibil <= 749) { code = 'MR'; status = 'APPROVED'; dpP = 30; apr = 16; baseMult = 4.0; }
+        else if (cibil <= 760) { code = 'LR'; status = 'APPROVED'; dpP = 20; apr = 12; baseMult = 6.0; }
+        else { code = 'FR'; status = 'APPROVED'; dpP = 0; apr = 8; baseMult = 8.0; }
+
+        if (app.occ === 'Salaried' && cibil >= 650) { baseMult += 2.0; } 
+        else if (app.occ === 'Student') { baseMult = Math.min(baseMult, 0.3); }
+        if ((age < 21 || age > 58) && baseMult > 0) { baseMult *= 0.7; }
+
+        let maxEligible = Math.floor((app.income * baseMult) / 1000) * 1000;
+        app.maxEligible = maxEligible; app.cibil = cibil; app.tier = code;
+
+        if (status === 'REJECTED') {
+            app.status = 'REJECTED'; app.rejectReason = reason; saveDB();
+            await uiAlert(`APPLICATION DECLINED.<br><br><b>CIBIL:</b> ${cibil}<br><b>Reason:</b> ${reason}`, "BUREAU RESPONSE");
+            nav('view-exceptions', document.querySelectorAll('.nav-item')[2]);
+        } 
+        else if (status === 'REJECTED_GR') {
+            app.status = 'REJECTED'; app.rejectReason = reason; saveDB();
+            const remarks = await uiPromptRemarks(`<b>System Flag:</b> ${reason}.<br><br>Max Eligible Limit based on income profile is strictly <b>₹${maxEligible.toLocaleString()}</b>.<br><br>Do you wish to force override?`);
+            if(remarks) { app.overrideLog = remarks; openStructuring(app, 50, 27, true); } 
+            else nav('view-exceptions', document.querySelectorAll('.nav-item')[2]);
+        } 
+        else {
+            await uiAlert(`BUREAU APPROVED.<br><br><b>Tier:</b> ${code}<br><b>Max Eligible:</b> ₹${maxEligible.toLocaleString()}`, "DECISION APPROVED");
+            if (app.loanType === 'PL') dpP = 0;
+            openStructuring(app, dpP, apr);
+        }
+    }
+
+    // --- 6. STRUCTURING & CO-APPLICANT ---
+    function openStructuring(app, defDpPercent, defApr, isForce = false) {
+        app.status = 'APPROVED_STRUCTURING';
+        document.getElementById('l_cibil').innerText = app.cibil + (app.hasCoApp ? ' (+CO)' : ''); 
+        document.getElementById('l_tier').innerText = app.tier;
+        
+        let reqAmt = app.loanType === 'PL' ? app.plAmountReq : app.prodValue;
+        document.getElementById('disp_req_amt').innerText = `₹${parseFloat(reqAmt).toLocaleString()}`;
+        document.getElementById('disp_max_limit').innerText = `₹${app.maxEligible.toLocaleString()}`;
+
+        if (reqAmt > app.maxEligible && !app.hasCoApp) { document.getElementById('btn_add_coapp').classList.remove('hidden'); } 
+        else { document.getElementById('btn_add_coapp').classList.add('hidden'); }
+
+        const dpField = document.getElementById('l_dp'); const aprField = document.getElementById('l_apr');
+        document.getElementById('btn_req_exception').classList.remove('hidden');
+
+        document.getElementById('l_start').value = app.l_start || ''; 
+        document.getElementById('l_emi_date').value = app.l_emi_date || '';
+        document.getElementById('b_name').value = app.bankName || ''; 
+        document.getElementById('b_acc').value = app.bankAcc || '';
+        document.getElementById('b_ifsc').value = app.bankIfsc || ''; 
+        document.getElementById('b_mandate').value = app.mandateId || '';
+        document.getElementById('l_tenure').value = app.loanDetails?.tenure || 12;
+
+        if(app.loanType === 'PL') {
+            document.getElementById('lbl_cost').innerText = "APPROVED LOAN AMOUNT (INR)";
+            document.getElementById('l_cost').value = Math.min(app.plAmountReq, app.maxEligible);
+            document.getElementById('sec_dp').classList.add('hidden'); 
+            document.getElementById('lbl_disb').innerText = "Cust. Bank Disbursement";
+            dpField.value = 0; aprField.value = defApr;
+        } else {
+            document.getElementById('lbl_cost').innerText = "ASSET COST (INR)";
+            document.getElementById('l_cost').value = app.prodValue;
+            document.getElementById('sec_dp').classList.remove('hidden');
+            document.getElementById('lbl_disb').innerText = "Dealer Disbursement";
+            let policyLoan = app.prodValue * (1 - (defDpPercent / 100));
+            let actualLoan = Math.min(policyLoan, app.maxEligible);
+            let requiredDp = app.prodValue - actualLoan;
+            dpField.value = Math.max(requiredDp, 0).toFixed(0); aprField.value = defApr;
+        }
+
+        if(isForce) { app.forceUnderwritten = true; dpField.readOnly = true; aprField.readOnly = true; document.getElementById('l_cost').readOnly = true; } 
+        else { app.forceUnderwritten = false; dpField.readOnly = false; aprField.readOnly = false; document.getElementById('l_cost').readOnly = false; }
+
+        saveDB(); calcEMI();
+        document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active')); document.getElementById('view-structure').classList.add('active'); window.scrollTo(0, 0);
+    }
+
+    function showCoAppForm() { document.getElementById('co_app_form').classList.remove('hidden'); document.getElementById('btn_add_coapp').classList.add('hidden'); }
+
+    async function processCoApplicant() {
+        const pan = document.getElementById('co_pan').value.toUpperCase();
+        const income = parseFloat(document.getElementById('co_income').value);
+        if(!pan || !income) return uiAlert("PAN and Income are required.");
+
+        await showSysLoader("FETCHING CO-APPLICANT BUREAU...", 2000);
+        
+        let cibil;
+        if(cibilRegistry[pan]) cibil = cibilRegistry[pan];
+        else {
+            cibil = Math.random() <= 0.70 ? getRandInt(700, 800) : getRandInt(350, 699); 
+            cibilRegistry[pan] = cibil; localStorage.setItem('nestCibilRegistry', JSON.stringify(cibilRegistry));
+        }
+
+        let multiplier = 0;
+        if (cibil >= 760) multiplier = 6.0;
+        else if (cibil >= 730) multiplier = 2.5;
+        else if (cibil >= 700) multiplier = 1.0;
+        else if (cibil >= 650) multiplier = 0.5;
+
+        if(multiplier === 0) {
+            document.getElementById('co_app_form').classList.add('hidden');
+            return uiAlert(`Co-Applicant Rejected.<br>CIBIL: ${cibil}<br>Cannot enhance limit.`, "ENHANCEMENT FAILED");
+        }
+
+        let extraLimit = Math.floor((income * multiplier) / 1000) * 1000;
+        const app = getApp();
+        app.maxEligible += extraLimit; app.hasCoApp = true; app.coAppDetails = { pan, cibil, extraLimit }; saveDB();
+        await uiAlert(`Co-Applicant Approved!<br>CIBIL: ${cibil}<br>Additional Limit: ₹${extraLimit.toLocaleString()}`, "LIMIT ENHANCED");
+        
+        document.getElementById('co_app_form').classList.add('hidden');
+        openStructuring(app, app.loanType==='PL'?0:20, 16, app.forceUnderwritten); 
+    }
+
+    async function requestLimitException() {
+        const remarks = await uiPromptRemarks("Submit a formal request to the Credit Manager to override algorithmic limits:", "LIMIT EXCEPTION DESK");
+        if(remarks) {
+            const app = getApp(); app.status = 'EXCEPTION_REQ'; app.exceptionRemarks = remarks; saveDB();
+            await uiAlert("Application moved to Exception Desk for managerial review.", "ROUTED");
+            nav('view-exceptions', document.querySelectorAll('.nav-item')[2]);
+        }
+    }
+
+    async function generateMandateWithOTP() {
+        const otp = await uiPromptRemarks("Enter 6-digit OTP sent to customer's mobile to register NACH e-Mandate:", "MANDATE REGISTRATION", "VERIFY OTP", "number");
+        if(otp && otp.length >= 4) {
+            await showSysLoader("REGISTERING SECURE E-MANDATE...", 2000);
+            const val = 'MND'+Math.floor(Math.random()*9000000+1000000);
+            document.getElementById('b_mandate').value = val; autoSaveApp('mandateId', val);
+        } else if (otp) { alert("Invalid OTP format."); }
+    }
+
+    function calcEMI() {
+        const app = getApp();
+        let cost = parseFloat(document.getElementById('l_cost').value) || 0;
+        let dp = app.loanType === 'PL' ? 0 : (parseFloat(document.getElementById('l_dp').value) || 0);
+        let apr = parseFloat(document.getElementById('l_apr').value) || 0;
+        let tenure = parseFloat(document.getElementById('l_tenure').value) || 1;
+
+        let principal = cost - dp; 
+        
+        if (principal > app.maxEligible && !app.forceUnderwritten) {
+            principal = app.maxEligible;
+            if(app.loanType === 'CD' || app.loanType === 'Bike') { dp = cost - principal; document.getElementById('l_dp').value = dp.toFixed(0); } 
+            else { cost = principal; document.getElementById('l_cost').value = cost.toFixed(0); }
+        }
+
+        let emi = 0, totalInterest = 0;
+        if (principal > 0) {
+            if(apr > 0) { const r = (apr/12)/100; emi = (principal * r * Math.pow(1+r, tenure)) / (Math.pow(1+r, tenure) - 1); } 
+            else { emi = principal / tenure; }
+            totalInterest = (emi * tenure) - principal;
+        }
+        document.getElementById('calc_emi').innerText = `₹${emi.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('calc_i').innerText = `₹${totalInterest.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('calc_disb').innerText = `₹${principal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        getApp().loanDetails = { principal: principal.toFixed(2), emi: emi.toFixed(2), tenure: tenure, apr: apr, pf: (principal * 0.02).toFixed(0) };
+    }
+
+    async function sanctionAndDisburse() {
+        const app = getApp();
+        if(!document.getElementById('b_mandate').value || !document.getElementById('b_acc').value) return uiAlert("Bank Details missing.", "COMPLIANCE ERROR");
+        await showSysLoader("AUTHORIZING DISBURSEMENT...", 2000);
+        app.status = 'ACTIVE'; app.loanId = genId('LN');
+        saveDB();
+        
+        const disburseTarget = app.loanType === 'PL' ? 'Customer Bank Account' : 'Dealer Account';
+        await uiAlert(`TRANSACTION COMPLETE.<br><br>Funds successfully scheduled for disbursement to ${disburseTarget}.<br><br>Loan A/C: <b>${app.loanId}</b>`, "DISBURSEMENT AUTHORIZED");
+        
+        generateSanctionLetter(app);
+        setAppIdContext(null); nav('view-portfolio', document.querySelectorAll('.nav-item')[3]);
+    }
+
+    function generateSanctionLetter(app) {
+        document.getElementById('pdf_date').innerText = new Date().toLocaleDateString(); document.getElementById('pdf_app').innerText = app.appId;
+        document.getElementById('pdf_name').innerText = `${app.fname} ${app.lname}`.toUpperCase(); document.getElementById('pdf_add').innerText = app.address; document.getElementById('pdf_mob').innerText = app.mobile;
+        document.getElementById('pdf_sub').innerText = `Application for ${app.loanType === 'PL' ? 'Personal Loan' : (app.loanType === 'Bike' ? 'Two Wheeler Loan' : 'Consumer Durable Loan')}`;
+        document.getElementById('pdf_t_type').innerText = app.loanType === 'PL' ? 'Personal Loan' : (app.loanType === 'Bike' ? 'Two Wheeler Loan' : 'Consumer Durable');
+        document.getElementById('pdf_t_amt').innerText = `₹${parseFloat(app.loanDetails.principal).toLocaleString()}`; document.getElementById('pdf_t_tenor').innerText = `${app.loanDetails.tenure} Months`;
+        document.getElementById('pdf_t_apr').innerText = `${app.loanDetails.apr}% APR`; document.getElementById('pdf_t_emi').innerText = `₹${parseFloat(app.loanDetails.emi).toLocaleString()}`;
+        document.getElementById('pdf_t_pf').innerText = `₹${parseFloat(app.loanDetails.pf).toLocaleString()}`; document.getElementById('pdf_t_disb').innerText = `₹${(app.loanDetails.principal - app.loanDetails.pf).toLocaleString()}`;
+        
+        document.getElementById('pdf_tr_imei').style.display = 'none'; document.getElementById('pdf_tr_bike').style.display = 'none';
+        if(app.loanType === 'CD' && app.imei1) { document.getElementById('pdf_tr_imei').style.display = 'table-row'; document.getElementById('pdf_t_imei').innerText = `${app.imei1} / ${app.imei2 || 'N/A'}`; } 
+        else if (app.loanType === 'Bike' && app.engineNo) { document.getElementById('pdf_tr_bike').style.display = 'table-row'; document.getElementById('pdf_t_bike').innerText = `Eng: ${app.engineNo} | Vin: ${app.chassisNo}`; }
+
+        const element = document.getElementById('sanction-letter-template');
+        html2pdf().set({ margin: 10, filename: `Sanction_Letter_${app.appId}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(element).save();
+    }
+
+    // --- 7. EXCEPTION DESK ---
+    function renderExceptions() {
+        const cont = document.getElementById('exception-list'); cont.innerHTML = ''; 
+        const exceptions = db.filter(a => ['REJECTED', 'EXCEPTION_REQ'].includes(a.status));
+        if(!exceptions.length) return cont.innerHTML = '<div class="panel">No exceptions pending.</div>';
+        
+        exceptions.forEach(app => {
+            const isReq = app.status === 'EXCEPTION_REQ';
+            const badgeClass = isReq ? 'badge-exception' : 'badge-danger';
+            const badgeText = isReq ? 'LIMIT REVIEW' : 'DECLINED';
+            const btnText = isReq ? 'APPROVE LIMIT OVERRIDE' : 'FORCE UNDERWRITE';
+            
+            let extraHTML = isReq ? `<div style="font-size:0.75rem; font-weight:700; color:var(--warning); margin-bottom:8px;">AGENT REMARKS: ${app.exceptionRemarks}</div>` : `<div style="color:var(--danger); font-size:0.8rem; margin-bottom:16px;">REASON: ${app.rejectReason}</div>`;
+
+            cont.innerHTML += `<div class="panel" style="border-left: 4px solid ${isReq?'var(--brand-primary)':'var(--danger)'};">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><strong style="text-transform:uppercase;">${app.fname} ${app.lname}</strong><span class="badge ${badgeClass}">${badgeText}</span></div>
+                <div class="data-grid" style="margin-bottom:8px;"><div><span>App ID</span><strong style="font-family:monospace;">${app.appId}</strong></div><div><span>Max Limit</span><strong>₹${app.maxEligible.toLocaleString()}</strong></div></div>
+                ${extraHTML}
+                <button class="btn btn-outline" onclick="${isReq ? `approveExceptionLimit('${app.appId}')` : `triggerForceUnderwriteRej('${app.appId}')`}" style="font-size:0.75rem; border-color:var(--brand-primary);">${btnText}</button></div>`;
+        });
+    }
+
+    async function approveExceptionLimit(id) {
+        setAppIdContext(id); const app = getApp();
+        const newLimit = await uiPromptRemarks(`Current Algorithmic Limit: ₹${app.maxEligible.toLocaleString()}<br>Enter NEW Approved Limit (INR):`, "MANAGER OVERRIDE", "APPROVE LIMIT", "number");
+        if(newLimit) {
+            app.maxEligible = parseFloat(newLimit); app.forceUnderwritten = false; app.status = 'APPROVED_STRUCTURING'; saveDB();
+            await uiAlert(`Limit Exception Approved.<br>New Max Limit: ₹${app.maxEligible.toLocaleString()}`, "SYSTEM LOG");
+            nav('view-pipeline'); 
+        }
+    }
+
+    async function triggerForceUnderwriteRej(id) {
+        const remarks = await uiPromptRemarks("Override will lock APR at 33% and DP at 60%.<br>Provide justification:");
+        if(remarks) { setAppIdContext(id); getApp().overrideLog = remarks; await showSysLoader("OVERRIDING...", 1000); openStructuring(getApp(), 60, 33, true); }
+    }
+
+    // --- 8. PORTFOLIO & CROSS SELL ---
+    function renderPortfolio() {
+        const cont = document.getElementById('portfolio-list'); cont.innerHTML = ''; const actives = db.filter(a => a.status === 'ACTIVE');
+        if(!actives.length) return cont.innerHTML = '<div class="panel">Ledger empty.</div>';
+        actives.forEach(app => {
+            cont.innerHTML += `<div class="list-item" style="border-left: 4px solid var(--success);" onclick="openActiveEdit('${app.appId}')"><div style="width: 100%;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><strong style="text-transform:uppercase;">${app.fname} ${app.lname}</strong><span class="badge badge-success">ACTIVE</span></div>
+                <div class="data-grid" style="margin-bottom:0; background:transparent; border:none; padding:0;"><div><span>Loan A/C</span><strong style="font-family:monospace;">${app.loanId}</strong></div><div><span>EMI</span><strong style="color:var(--brand-primary)">₹${parseFloat(app.loanDetails.emi).toLocaleString()}</strong></div></div></div></div>`;
+        });
+    }
+
+    async function openActiveEdit(id) {
+        await showSysLoader("RETRIEVING LEDGER DATA...", 500); setAppIdContext(id); const app = getApp();
+        document.getElementById('e_app_id').innerText = app.appId; document.getElementById('e_loan_id').innerText = app.loanId;
+        document.getElementById('e_name').innerText = `${app.fname} ${app.lname}`; document.getElementById('e_sanction_amt').innerText = `₹${parseFloat(app.loanDetails.principal).toLocaleString()}`;
+        
+        if(app.loanType === 'CD') {
+            document.getElementById('edit_asset_sec_cd').classList.remove('hidden'); document.getElementById('edit_asset_sec_bike').classList.add('hidden'); document.getElementById('edit_asset_sec_pl').classList.add('hidden');
+            document.getElementById('e_cd_dealer').value = app.dealerName || 'N/A'; document.getElementById('e_cd_name').value = app.p_name || 'N/A'; document.getElementById('e_cd_imei1').value = app.imei1 || 'N/A'; document.getElementById('e_cd_imei2').value = app.imei2 || 'N/A';
+        } else if (app.loanType === 'Bike') {
+            document.getElementById('edit_asset_sec_cd').classList.add('hidden'); document.getElementById('edit_asset_sec_bike').classList.remove('hidden'); document.getElementById('edit_asset_sec_pl').classList.add('hidden');
+            document.getElementById('e_bike_dealer').value = app.dealerName || 'N/A'; document.getElementById('e_bike_name').value = app.p_name || 'N/A'; document.getElementById('e_bike_engine').value = app.engineNo || 'N/A'; document.getElementById('e_bike_chassis').value = app.chassisNo || 'N/A';
+        } else {
+            document.getElementById('edit_asset_sec_cd').classList.add('hidden'); document.getElementById('edit_asset_sec_bike').classList.add('hidden'); document.getElementById('edit_asset_sec_pl').classList.remove('hidden');
+            document.getElementById('e_pl_purpose').value = app.plPurpose || 'N/A';
+        }
+
+        ['e_mobile','e_address','e_b_name','e_b_acc','e_b_ifsc', 'e_cd_name', 'e_cd_imei1', 'e_cd_imei2', 'e_cd_dealer', 'e_bike_name', 'e_bike_engine', 'e_bike_chassis', 'e_bike_dealer', 'e_pl_purpose'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).disabled = true; });
+        document.getElementById('e_mobile').value = app.mobile || ''; document.getElementById('e_address').value = app.address || '';
+        document.getElementById('e_b_name').value = app.bankName || ''; document.getElementById('e_b_acc').value = app.bankAcc || ''; document.getElementById('e_b_ifsc').value = app.bankIfsc || '';
+        
+        document.getElementById('edit_actions').classList.remove('hidden'); document.getElementById('save_actions').classList.add('hidden');
+        
+        let surplus = app.maxEligible - parseFloat(app.loanDetails.principal);
+        document.getElementById('cc_offer_banner').classList.add('hidden'); document.getElementById('cc_active_card').classList.add('hidden'); document.getElementById('pl_active_cross_sell').classList.add('hidden'); document.getElementById('cross_sell_pl_form').classList.add('hidden');
+
+        if(app.cc_issued) {
+            document.getElementById('cc_active_card').classList.remove('hidden');
+            document.getElementById('cc_num_display').innerText = app.cc_number; document.getElementById('cc_name_display').innerText = `${app.fname} ${app.lname}`;
+            document.getElementById('cc_limit_display').innerText = `₹${app.cc_limit.toLocaleString()}`;
+            document.getElementById('cc_status_display').innerText = app.cc_blocked ? "BLOCKED" : "ACTIVE"; document.getElementById('cc_status_display').style.color = app.cc_blocked ? "var(--danger)" : "var(--success)";
+            if(app.cc_blocked) document.getElementById('cc_block_overlay').classList.remove('hidden'); else document.getElementById('cc_block_overlay').classList.add('hidden');
+            document.getElementById('btn_toggle_block').innerText = app.cc_blocked ? "UNBLOCK CARD" : "BLOCK CARD";
+        } 
+        if (app.pl_issued) {
+            document.getElementById('pl_active_cross_sell').classList.remove('hidden');
+            document.getElementById('pl_cross_purpose').innerText = app.crossSellDetails?.purpose || 'General';
+            document.getElementById('pl_cross_amt').innerText = `₹${app.pl_sanction.toLocaleString()}`;
+            document.getElementById('pl_cross_emi').innerText = `₹${app.crossSellDetails?.emi || 0}`;
+        }
+        if (!app.cc_issued && !app.pl_issued && surplus >= 10000) {
+            document.getElementById('cc_offer_banner_actions').classList.remove('hidden');
+            document.getElementById('cc_offer_banner').classList.remove('hidden');
+            document.getElementById('cc_surplus_amt').innerText = `₹${surplus.toLocaleString()}`;
+        }
+
+        document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active')); document.getElementById('view-active-edit').classList.add('active'); window.scrollTo(0,0);
+    }
+
+    async function issueCreditCard() {
+        const app = getApp(); let surplus = app.maxEligible - parseFloat(app.loanDetails.principal);
+        await showSysLoader("PROVISIONING CO-BRANDED CARD...", 2000);
+        app.cc_issued = true; app.cc_limit = surplus;
+        app.cc_number = "5369 07" + Math.floor(Math.random() * 90) + " " + Math.floor(Math.random() * 9000 + 1000) + " " + Math.floor(Math.random() * 9000 + 1000);
+        app.cc_blocked = false; saveDB();
+        await uiAlert(`Card issued successfully.<br>Credit Limit: ₹${app.cc_limit.toLocaleString()}`, "CARD PROVISIONED");
+        openActiveEdit(app.appId);
+    }
+
+    function showCrossSellPLForm() {
+        const app = getApp(); let surplus = app.maxEligible - parseFloat(app.loanDetails.principal);
+        document.getElementById('cs_pl_max').innerText = `₹${surplus.toLocaleString()}`; document.getElementById('cs_pl_amt').value = surplus;
+        document.getElementById('cc_offer_banner_actions').classList.add('hidden'); document.getElementById('cross_sell_pl_form').classList.remove('hidden');
+    }
+
+    async function disburseCrossSellPL() {
+        const app = getApp(); let surplus = app.maxEligible - parseFloat(app.loanDetails.principal);
+        let reqAmt = parseFloat(document.getElementById('cs_pl_amt').value);
+        if(reqAmt > surplus) return uiAlert("Amount exceeds available surplus limit.", "VALIDATION ERROR");
+        await showSysLoader("SANCTIONING PERSONAL LOAN...", 2000);
+        let tenure = parseInt(document.getElementById('cs_pl_tenure').value) || 12; let apr = 18; let r = (apr/12)/100;
+        let emi = (reqAmt * r * Math.pow(1+r, tenure)) / (Math.pow(1+r, tenure) - 1);
+
+        app.pl_issued = true; app.pl_sanction = reqAmt;
+        app.crossSellDetails = { purpose: document.getElementById('cs_pl_purpose').value, emi: emi.toFixed(2), tenure: tenure }; saveDB();
+        await uiAlert(`Personal Loan Disbursed to Customer Bank Account.<br>Amount: ₹${reqAmt.toLocaleString()}`, "TOP-UP DISBURSED");
+        openActiveEdit(app.appId);
+    }
+
+    async function toggleCardBlock() { const app = getApp(); app.cc_blocked = !app.cc_blocked; saveDB(); openActiveEdit(app.appId); }
+
+    async function changeCardLimit() {
+        const app = getApp(); const newLimit = await uiPromptRemarks(`Current Limit: ₹${app.cc_limit.toLocaleString()}<br>Enter NEW Limit (INR):`, "MANAGE CREDIT LIMIT", "UPDATE LIMIT", "number");
+        if(newLimit) { app.cc_limit = parseFloat(newLimit); saveDB(); openActiveEdit(app.appId); }
+    }
+
+    async function requestForceChange() {
+        const remarks = await uiPromptRemarks("Master Ledger records are locked.<br>Enter formal justification to unlock fields:", "AUDIT LOG PROTOCOL");
+        if(remarks) {
+            getApp().editLog = (getApp().editLog || "") + ` | Unlock: ${remarks}`;
+            ['e_mobile','e_address','e_b_name','e_b_acc','e_b_ifsc', 'e_cd_name', 'e_cd_imei1', 'e_cd_imei2', 'e_cd_dealer', 'e_bike_name', 'e_bike_engine', 'e_bike_chassis', 'e_bike_dealer', 'e_pl_purpose'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).disabled = false; });
+            document.getElementById('edit_actions').classList.add('hidden'); document.getElementById('save_actions').classList.remove('hidden');
+        }
+    }
+
+    async function saveActiveEdit() {
+        await showSysLoader("UPDATING LEDGER...", 1000); const app = getApp();
+        app.mobile = document.getElementById('e_mobile').value; app.address = document.getElementById('e_address').value;
+        app.bankName = document.getElementById('e_b_name').value; app.bankAcc = document.getElementById('e_b_acc').value; app.bankIfsc = document.getElementById('e_b_ifsc').value;
+        if (app.loanType === 'CD') { app.p_name = document.getElementById('e_cd_name').value; app.imei1 = document.getElementById('e_cd_imei1').value; app.imei2 = document.getElementById('e_cd_imei2').value; app.dealerName = document.getElementById('e_cd_dealer').value; } 
+        else if (app.loanType === 'Bike') { app.p_name = document.getElementById('e_bike_name').value; app.engineNo = document.getElementById('e_bike_engine').value; app.chassisNo = document.getElementById('e_bike_chassis').value; app.dealerName = document.getElementById('e_bike_dealer').value; }
+        else { app.plPurpose = document.getElementById('e_pl_purpose').value; }
+        saveDB(); await uiAlert("Ledger updated successfully.", "SYSTEM LOG"); nav('view-portfolio', document.querySelectorAll('.nav-item')[3]);
+    }
+
+    async function performSearch() {
+        const q = document.getElementById('search_query').value.toUpperCase().trim(); const res = document.getElementById('search-results'); res.innerHTML = ''; if(!q) return;
+        await showSysLoader("EXECUTING QUERY...", 600);
+        const found = db.filter(a => a.appId.includes(q) || (a.loanId && a.loanId.includes(q)) || (a.fname && a.fname.toUpperCase().includes(q)));
+        if(!found.length) return res.innerHTML = '<div class="panel">0 Records Found.</div>';
+        found.forEach(app => {
+            res.innerHTML += `<div class="panel"><div style="display:flex; justify-content:space-between; margin-bottom:8px;"><strong style="text-transform:uppercase;">${app.fname} ${app.lname}</strong><span class="badge ${app.status==='ACTIVE'?'badge-success':(app.status.includes('REJECTED')?'badge-danger':'badge-pending')}">${app.status.replace('_', ' ')}</span></div>
+            <div class="data-grid" style="margin-bottom:0;"><div><span>App ID</span><strong style="font-family:monospace;">${app.appId}</strong></div>${app.loanId ? `<div><span>Loan ID</span><strong style="font-family:monospace;">${app.loanId}</strong></div>` : '<div></div>'}</div></div>`;
+        });
+    }
+</script>
+</body>
+</html>
