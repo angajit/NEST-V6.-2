@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nest Finserv | DSA Core Module v7.0</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         /* Enterprise Fintech Theme */
         :root {
@@ -100,6 +101,20 @@
         .circle.red { background: #EB001B; transform: translateX(10px);}
         .circle.yellow { background: #F79E1B; mix-blend-mode: multiply;}
         .cc-blocked-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; justify-content:center; align-items:center; font-size:1.5rem; font-weight:bold; color:#FCA5A5; letter-spacing:2px; backdrop-filter: grayscale(1); z-index: 10;}
+
+        /* Off-Screen PDF Template */
+        #pdf-export-container { position: absolute; left: -9999px; top: 0; width: 800px; background: white; color: black; font-family: 'Times New Roman', Times, serif; }
+        .sanction-letter { padding: 40px; font-size: 13px; line-height: 1.6; }
+        .pdf-header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #000; padding-bottom: 15px;}
+        .pdf-header h1 { color: #000; font-size: 26px; margin: 0 0 5px 0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: bold;}
+        .pdf-header p { margin: 3px 0; font-size: 11px; color: #333; font-family: Arial, Helvetica, sans-serif;}
+        .pdf-title { text-align: center; font-weight: bold; font-size: 15px; margin: 25px 0; text-decoration: underline; text-transform: uppercase; letter-spacing: 1px;}
+        .pdf-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin: 30px 0; }
+        .pdf-table td { padding: 10px; border: 1px solid #000; }
+        .pdf-table td:first-child { font-weight: bold; width: 45%; }
+        .pdf-footer { margin-top: 60px; font-size: 12px; color: #000; }
+        .pdf-signature-block { margin-top: 40px; border-top: 1px solid #000; width: 220px; padding-top: 5px; font-weight: bold;}
     </style>
 </head>
 <body>
@@ -510,7 +525,10 @@
 
 <script>
     // --- STATE MANAGEMENT & AUTO-SAVE CORE ---
-    let db = JSON.parse(localStorage.getItem('nestFinservDB')) || [];
+    // DATA INTEGRITY SWEEPER: Instantly removes any corrupted nulls from previous crashes!
+    let rawDB = JSON.parse(localStorage.getItem('nestFinservDB')) || [];
+    let db = rawDB.filter(app => app !== null && typeof app === 'object' && app.appId); 
+    
     let currentAppId = localStorage.getItem('nestCurrentAppId') || null;
     let draftApp = JSON.parse(localStorage.getItem('nestDraftApp')) || {};
     let cibilRegistry = JSON.parse(localStorage.getItem('nestCibilRegistry')) || {}; 
@@ -522,13 +540,12 @@
         else localStorage.removeItem('nestCurrentAppId');
         document.getElementById('hdr-app-id').innerText = id || "---"; 
     }
-    function getApp() { return db.find(a => a.appId === currentAppId) || {}; }
+    function getApp() { return db.find(a => a.appId === currentAppId) || null; }
 
     function autoSaveApp(key, value) {
         if(!currentAppId) return;
         const app = getApp();
-        app[key] = value;
-        saveDB();
+        if(app) { app[key] = value; saveDB(); }
     }
 
     const DEALERS = { "DT21011721": "Maa Electronics", "DT21011722": "A to Z Mobile", "DT21011723": "Shani Electronis", "DT21011724": "DEEP Mobiles", "DT210117": "Shankar Mobiles", "DT21011725": "Sengupta Motors", "DT21011726": "Chowdhury Tvs" };
@@ -657,20 +674,28 @@
     }
 
     function renderPipeline() {
-        const cont = document.getElementById('pipeline-list'); cont.innerHTML = '';
-        const pending = db.filter(a => ['PENDING_KYC', 'PENDING_UW', 'APPROVED_STRUCTURING'].includes(a.status));
-        if(!pending.length) return cont.innerHTML = '<div class="panel">Pipeline empty.</div>';
+        const cont = document.getElementById('pipeline-list'); 
+        if(!cont) return;
+        cont.innerHTML = '';
+        
+        const pending = db.filter(a => a.status && ['PENDING_KYC', 'PENDING_UW', 'APPROVED_STRUCTURING'].includes(a.status));
+        if(!pending.length) {
+            cont.innerHTML = '<div class="panel">Pipeline empty.</div>';
+            return;
+        }
         pending.forEach(app => {
             let statusClass = app.status === 'APPROVED_STRUCTURING' ? 'badge-pending' : 'badge-success';
             let statusText = app.status === 'APPROVED_STRUCTURING' ? 'ACTION REQ' : app.status.replace('_',' ');
             cont.innerHTML += `<div class="list-item" onclick="openPipelineRecord('${app.appId}')">
-                <div><span class="badge badge-type">${app.loanType}</span><div style="font-weight:800;">${app.fname || ''} ${app.lname || ''}</div><div style="font-size:0.75rem; color:var(--text-muted); font-family:monospace; margin-top:2px;">${app.appId}</div></div>
+                <div><span class="badge badge-type">${app.loanType || 'N/A'}</span><div style="font-weight:800;">${app.fname || ''} ${app.lname || ''}</div><div style="font-size:0.75rem; color:var(--text-muted); font-family:monospace; margin-top:2px;">${app.appId}</div></div>
                 <span class="badge ${app.status==='PENDING_KYC'?'badge-pending':statusClass}">${statusText}</span></div>`;
         });
     }
 
     async function openPipelineRecord(id) {
         await showSysLoader("RETRIEVING RECORD...", 500); setAppIdContext(id); const app = getApp();
+        if(!app) return uiAlert("Data integrity error. Cannot load application.", "SYSTEM ERROR");
+        
         if (app.status === 'PENDING_KYC') {
             document.getElementById('kyc-customer-data').innerHTML = `<div class="data-grid"><div><span>Facility</span><strong>${app.loanType}</strong></div><div><span>Name</span><strong>${app.fname || ''} ${app.lname || ''}</strong></div></div>`;
             document.getElementById('btn-init-kyc').classList.remove('hidden'); document.getElementById('kyc_otp').value = ''; 
@@ -684,8 +709,9 @@
     async function verifyCKYC() {
         if(document.getElementById('kyc_otp').value.length !== 6) return uiAlert("6-digit OTP required for authentication.", "VERIFICATION FAILED");
         await showSysLoader("AUTHENTICATING...", 1200);
-        const app = getApp(); app.ckyc = genId('CKYC'); app.customerId = genId('CUST'); app.status = 'PENDING_UW'; saveDB();
-        document.getElementById('kyc-otp-section').classList.add('hidden'); document.getElementById('lbl_ckyc').innerText = app.ckyc; document.getElementById('kyc-success-section').classList.remove('hidden');
+        const app = getApp(); 
+        if(app) { app.ckyc = genId('CKYC'); app.customerId = genId('CUST'); app.status = 'PENDING_UW'; saveDB(); }
+        document.getElementById('kyc-otp-section').classList.add('hidden'); document.getElementById('lbl_ckyc').innerText = app ? app.ckyc : 'N/A'; document.getElementById('kyc-success-section').classList.remove('hidden');
     }
 
     function proceedToUnderwritingFlow() {
@@ -763,12 +789,15 @@
     async function verifyDealer() {
         const did = document.getElementById('ap_dealerId').value.trim(); const res = document.getElementById('dealer-result');
         await sleep(600);
-        if(DEALERS[did]) { res.innerHTML = `[ VERIFIED ] ${DEALERS[did]}`; res.style.color = 'var(--success)'; getApp().dealerVerified = true; getApp().dealerName = DEALERS[did]; autoSaveApp('dealerVerified', true); autoSaveApp('dealerName', DEALERS[did]); }
-        else { res.innerHTML = `[ VERIFICATION FAILED ]`; res.style.color = 'var(--danger)'; getApp().dealerVerified = false; }
+        const app = getApp();
+        if(DEALERS[did]) { res.innerHTML = `[ VERIFIED ] ${DEALERS[did]}`; res.style.color = 'var(--success)'; if(app) { app.dealerVerified = true; app.dealerName = DEALERS[did]; autoSaveApp('dealerVerified', true); autoSaveApp('dealerName', DEALERS[did]); } }
+        else { res.innerHTML = `[ VERIFICATION FAILED ]`; res.style.color = 'var(--danger)'; if(app) app.dealerVerified = false; }
     }
     
     async function submitAssetToUnderwriting() {
-        const app = getApp(); if(!app.dealerVerified) return uiAlert("Dealer ID must be verified.", "COMPLIANCE ERROR");
+        const app = getApp(); 
+        if(!app) return uiAlert("Data error. Cannot submit.", "SYSTEM ERROR");
+        if(!app.dealerVerified) return uiAlert("Dealer ID must be verified.", "COMPLIANCE ERROR");
         app.prodValue = parseFloat(document.getElementById('ap_value').value); if(!app.prodValue) return uiAlert("Invoice value missing.", "VALIDATION ERROR");
         
         if (app.loanType === 'CD') {
@@ -783,11 +812,15 @@
         saveDB(); await executeAutomatedPolicyEngine();
     }
     
-    async function submitPLToUnderwriting() { getApp().plPurpose = document.getElementById('pl_purpose').value; saveDB(); await executeAutomatedPolicyEngine(); }
+    async function submitPLToUnderwriting() { 
+        const app = getApp();
+        if(app) { app.plPurpose = document.getElementById('pl_purpose').value; saveDB(); await executeAutomatedPolicyEngine(); }
+    }
 
     async function executeAutomatedPolicyEngine() {
         await showSysLoader("EVALUATING MULTI-FACTOR RISK PROFILE...", 2500);
         const app = getApp();
+        if(!app) return;
         
         let cibil;
         if(cibilRegistry[app.pan]) {
@@ -837,13 +870,14 @@
     }
 
     function openStructuring(app, defDpPercent, defApr, isForce = false) {
+        if(!app) return;
         app.status = 'APPROVED_STRUCTURING';
         document.getElementById('l_cibil').innerText = app.cibil + (app.hasCoApp ? ' (+CO)' : ''); 
         document.getElementById('l_tier').innerText = app.tier;
         
         let reqAmt = app.loanType === 'PL' ? app.plAmountReq : app.prodValue;
-        document.getElementById('disp_req_amt').innerText = `₹${parseFloat(reqAmt).toLocaleString()}`;
-        document.getElementById('disp_max_limit').innerText = `₹${(app.maxEligible || 0).toLocaleString()}`;
+        document.getElementById('disp_req_amt').innerText = `₹${parseFloat(reqAmt || 0).toLocaleString()}`;
+        document.getElementById('disp_max_limit').innerText = `₹${parseFloat(app.maxEligible || 0).toLocaleString()}`;
 
         if (reqAmt > app.maxEligible && !app.hasCoApp) { document.getElementById('btn_add_coapp').classList.remove('hidden'); } 
         else { document.getElementById('btn_add_coapp').classList.add('hidden'); }
@@ -867,7 +901,7 @@
             dpField.value = 0; aprField.value = defApr;
         } else {
             document.getElementById('lbl_cost').innerText = "ASSET COST (INR)";
-            document.getElementById('l_cost').value = app.prodValue;
+            document.getElementById('l_cost').value = app.prodValue || 0;
             document.getElementById('sec_dp').classList.remove('hidden');
             document.getElementById('lbl_disb').innerText = "Dealer Disbursement";
             let policyLoan = app.prodValue * (1 - (defDpPercent / 100));
@@ -912,17 +946,18 @@
 
         let extraLimit = Math.floor((income * multiplier) / 1000) * 1000;
         const app = getApp();
-        app.maxEligible = (app.maxEligible || 0) + extraLimit; app.hasCoApp = true; app.coAppDetails = { pan, cibil, extraLimit }; saveDB();
+        if(app) { app.maxEligible = (app.maxEligible || 0) + extraLimit; app.hasCoApp = true; app.coAppDetails = { pan, cibil, extraLimit }; saveDB(); }
         await uiAlert(`Co-Applicant Approved!<br>CIBIL: ${cibil}<br>Additional Limit: ₹${extraLimit.toLocaleString()}`, "LIMIT ENHANCED");
         
         document.getElementById('co_app_form').classList.add('hidden');
-        openStructuring(app, app.loanType==='PL'?0:20, 16, app.forceUnderwritten); 
+        openStructuring(app, app.loanType==='PL'?0:20, 16, app?app.forceUnderwritten:false); 
     }
 
     async function requestLimitException() {
         const remarks = await uiPromptRemarks("Submit a formal request to the Credit Manager to override algorithmic limits:", "LIMIT EXCEPTION DESK");
         if(remarks) {
-            const app = getApp(); app.status = 'EXCEPTION_REQ'; app.exceptionRemarks = remarks; saveDB();
+            const app = getApp(); 
+            if(app) { app.status = 'EXCEPTION_REQ'; app.exceptionRemarks = remarks; saveDB(); }
             await uiAlert("Application moved to Exception Desk for managerial review.", "ROUTED");
             nav('view-exceptions', document.querySelectorAll('.nav-item')[2]);
         }
@@ -939,6 +974,7 @@
 
     function calcEMI() {
         const app = getApp();
+        if(!app) return;
         let cost = parseFloat(document.getElementById('l_cost').value) || 0;
         let dp = app.loanType === 'PL' ? 0 : (parseFloat(document.getElementById('l_dp').value) || 0);
         let apr = parseFloat(document.getElementById('l_apr').value) || 0;
@@ -961,20 +997,47 @@
         document.getElementById('calc_emi').innerText = `₹${emi.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         document.getElementById('calc_i').innerText = `₹${totalInterest.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         document.getElementById('calc_disb').innerText = `₹${principal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        getApp().loanDetails = { principal: principal.toFixed(2), emi: emi.toFixed(2), tenure: tenure, apr: apr, pf: (principal * 0.02).toFixed(0) };
+        app.loanDetails = { principal: principal.toFixed(2), emi: emi.toFixed(2), tenure: tenure, apr: apr, pf: (principal * 0.02).toFixed(0) };
     }
 
     async function sanctionAndDisburse() {
         const app = getApp();
         if(!document.getElementById('b_mandate').value || !document.getElementById('b_acc').value) return uiAlert("Bank Details missing.", "COMPLIANCE ERROR");
         await showSysLoader("AUTHORIZING DISBURSEMENT...", 2000);
-        app.status = 'ACTIVE'; app.loanId = genId('LN');
-        saveDB();
+        if(app) { app.status = 'ACTIVE'; app.loanId = genId('LN'); saveDB(); }
         
-        const disburseTarget = app.loanType === 'PL' ? 'Customer Bank Account' : 'Dealer Account';
-        await uiAlert(`TRANSACTION COMPLETE.<br><br>Funds successfully scheduled for disbursement to ${disburseTarget}.<br><br>Loan A/C: <b>${app.loanId}</b>`, "DISBURSEMENT AUTHORIZED");
+        const disburseTarget = app && app.loanType === 'PL' ? 'Customer Bank Account' : 'Dealer Account';
+        await uiAlert(`TRANSACTION COMPLETE.<br><br>Funds successfully scheduled for disbursement to ${disburseTarget}.<br><br>Loan A/C: <b>${app ? app.loanId : ''}</b>`, "DISBURSEMENT AUTHORIZED");
         
+        if(app) generateSanctionLetter(app);
         setAppIdContext(null); nav('view-portfolio', document.querySelectorAll('.nav-item')[3]);
+    }
+
+    function generateSanctionLetter(app) {
+        document.getElementById('pdf_date').innerText = new Date().toLocaleDateString(); document.getElementById('pdf_app').innerText = app.appId || '';
+        document.getElementById('pdf_name').innerText = `${app.fname || ''} ${app.lname || ''}`.toUpperCase(); document.getElementById('pdf_add').innerText = app.address || ''; document.getElementById('pdf_mob').innerText = app.mobile || '';
+        document.getElementById('pdf_sub').innerText = `Application for ${app.loanType === 'PL' ? 'Personal Loan' : (app.loanType === 'Bike' ? 'Two Wheeler Loan' : 'Consumer Durable Loan')}`;
+        document.getElementById('pdf_t_type').innerText = app.loanType === 'PL' ? 'Personal Loan' : (app.loanType === 'Bike' ? 'Two Wheeler Loan' : 'Consumer Durable');
+        
+        let p_prin = app.loanDetails && app.loanDetails.principal ? app.loanDetails.principal : 0;
+        let p_emi = app.loanDetails && app.loanDetails.emi ? app.loanDetails.emi : 0;
+        let p_ten = app.loanDetails && app.loanDetails.tenure ? app.loanDetails.tenure : 0;
+        let p_apr = app.loanDetails && app.loanDetails.apr ? app.loanDetails.apr : 0;
+        let p_pf = app.loanDetails && app.loanDetails.pf ? app.loanDetails.pf : 0;
+        
+        document.getElementById('pdf_t_amt').innerText = `₹${parseFloat(p_prin).toLocaleString()}`; 
+        document.getElementById('pdf_t_tenor').innerText = `${p_ten} Months`;
+        document.getElementById('pdf_t_apr').innerText = `${p_apr}% APR`; 
+        document.getElementById('pdf_t_emi').innerText = `₹${parseFloat(p_emi).toLocaleString()}`;
+        document.getElementById('pdf_t_pf').innerText = `₹${parseFloat(p_pf).toLocaleString()}`; 
+        document.getElementById('pdf_t_disb').innerText = `₹${(p_prin - p_pf).toLocaleString()}`;
+        
+        document.getElementById('pdf_tr_imei').style.display = 'none'; document.getElementById('pdf_tr_bike').style.display = 'none';
+        if(app.loanType === 'CD' && app.imei1) { document.getElementById('pdf_tr_imei').style.display = 'table-row'; document.getElementById('pdf_t_imei').innerText = `${app.imei1} / ${app.imei2 || 'N/A'}`; } 
+        else if (app.loanType === 'Bike' && app.engineNo) { document.getElementById('pdf_tr_bike').style.display = 'table-row'; document.getElementById('pdf_t_bike').innerText = `Eng: ${app.engineNo} | Vin: ${app.chassisNo}`; }
+
+        const element = document.getElementById('sanction-letter-template');
+        html2pdf().set({ margin: 10, filename: `Sanction_Letter_${app.appId}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(element).save();
     }
 
     // --- BULLETPROOF EXCEPTION RENDERING ---
@@ -983,8 +1046,11 @@
         if(!cont) return;
         cont.innerHTML = ''; 
         
-        const exceptions = db.filter(a => ['REJECTED', 'EXCEPTION_REQ'].includes(a.status));
-        if(!exceptions.length) return cont.innerHTML = '<div class="panel">No exceptions pending.</div>';
+        const exceptions = db.filter(a => a.status && ['REJECTED', 'EXCEPTION_REQ'].includes(a.status));
+        if(!exceptions.length) {
+            cont.innerHTML = '<div class="panel">No exceptions pending.</div>';
+            return;
+        }
         
         exceptions.forEach(app => {
             try {
@@ -995,21 +1061,22 @@
                 
                 let extraHTML = isReq ? `<div style="font-size:0.75rem; font-weight:700; color:var(--warning); margin-bottom:8px;">AGENT REMARKS: ${app.exceptionRemarks || 'N/A'}</div>` : `<div style="color:var(--danger); font-size:0.8rem; margin-bottom:16px;">REASON: ${app.rejectReason || 'N/A'}</div>`;
                 
-                let maxLimit = app.maxEligible ? app.maxEligible.toLocaleString() : '0';
+                let maxLimit = !isNaN(app.maxEligible) && app.maxEligible !== null ? Number(app.maxEligible).toLocaleString('en-IN') : '0';
 
                 cont.innerHTML += `<div class="panel" style="border-left: 4px solid ${isReq?'var(--brand-primary)':'var(--danger)'};">
                     <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><strong style="text-transform:uppercase;">${app.fname || 'UNKNOWN'} ${app.lname || ''}</strong><span class="badge ${badgeClass}">${badgeText}</span></div>
-                    <div class="data-grid" style="margin-bottom:8px;"><div><span>App ID</span><strong style="font-family:monospace;">${app.appId}</strong></div><div><span>Max Limit</span><strong>₹${maxLimit}</strong></div></div>
+                    <div class="data-grid" style="margin-bottom:8px;"><div><span>App ID</span><strong style="font-family:monospace;">${app.appId || 'N/A'}</strong></div><div><span>Max Limit</span><strong>₹${maxLimit}</strong></div></div>
                     ${extraHTML}
                     <button class="btn btn-outline" onclick="${isReq ? `approveExceptionLimit('${app.appId}')` : `triggerForceUnderwriteRej('${app.appId}')`}" style="font-size:0.75rem; border-color:var(--brand-primary);">${btnText}</button></div>`;
             } catch (e) {
-                console.error("Failed to render an exception record:", e);
+                console.error("Failed to render exception record:", e);
             }
         });
     }
 
     async function approveExceptionLimit(id) {
         setAppIdContext(id); const app = getApp();
+        if(!app) return;
         const newLimit = await uiPromptRemarks(`Current Algorithmic Limit: ₹${(app.maxEligible || 0).toLocaleString()}<br>Enter NEW Approved Limit (INR):`, "MANAGER OVERRIDE", "APPROVE LIMIT", "number");
         if(newLimit) {
             app.maxEligible = parseFloat(newLimit); app.forceUnderwritten = false; app.status = 'APPROVED_STRUCTURING'; saveDB();
@@ -1020,7 +1087,7 @@
 
     async function triggerForceUnderwriteRej(id) {
         const remarks = await uiPromptRemarks("Override will lock APR at 33% and DP at 60%.<br>Provide justification:");
-        if(remarks) { setAppIdContext(id); getApp().overrideLog = remarks; await showSysLoader("OVERRIDING...", 1000); openStructuring(getApp(), 60, 33, true); }
+        if(remarks) { setAppIdContext(id); const app = getApp(); if(app) { app.overrideLog = remarks; await showSysLoader("OVERRIDING...", 1000); openStructuring(app, 60, 33, true); } }
     }
 
     // --- BULLETPROOF PORTFOLIO RENDERING ---
@@ -1030,23 +1097,27 @@
         cont.innerHTML = ''; 
         
         const actives = db.filter(a => a.status === 'ACTIVE');
-        if(!actives.length) return cont.innerHTML = '<div class="panel">Ledger empty.</div>';
+        if(!actives.length) {
+            cont.innerHTML = '<div class="panel">Ledger empty.</div>';
+            return;
+        }
         
         actives.forEach(app => {
             try {
-                let emi = (app.loanDetails && app.loanDetails.emi) ? parseFloat(app.loanDetails.emi).toLocaleString() : '0';
+                let emi = (app.loanDetails && !isNaN(app.loanDetails.emi)) ? Number(app.loanDetails.emi).toLocaleString('en-IN') : '0';
                 
                 cont.innerHTML += `<div class="list-item" style="border-left: 4px solid var(--success);" onclick="openActiveEdit('${app.appId}')"><div style="width: 100%;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><strong style="text-transform:uppercase;">${app.fname || 'UNKNOWN'} ${app.lname || ''}</strong><span class="badge badge-success">ACTIVE</span></div>
                     <div class="data-grid" style="margin-bottom:0; background:transparent; border:none; padding:0;"><div><span>Loan A/C</span><strong style="font-family:monospace;">${app.loanId || 'N/A'}</strong></div><div><span>EMI</span><strong style="color:var(--brand-primary)">₹${emi}</strong></div></div></div></div>`;
             } catch (e) {
-                console.error("Failed to render a portfolio record:", e);
+                console.error("Failed to render portfolio record:", e);
             }
         });
     }
 
     async function openActiveEdit(id) {
         await showSysLoader("RETRIEVING LEDGER DATA...", 500); setAppIdContext(id); const app = getApp();
+        if(!app) return;
         document.getElementById('e_app_id').innerText = app.appId || '---'; document.getElementById('e_loan_id').innerText = app.loanId || '---';
         document.getElementById('e_name').innerText = `${app.fname || ''} ${app.lname || ''}`; 
         
@@ -1098,6 +1169,7 @@
 
     async function issueCreditCard() {
         const app = getApp(); 
+        if(!app) return;
         let principalAmt = (app.loanDetails && app.loanDetails.principal) ? app.loanDetails.principal : 0;
         let surplus = (app.maxEligible || 0) - parseFloat(principalAmt);
         await showSysLoader("PROVISIONING CO-BRANDED CARD...", 2000);
@@ -1110,6 +1182,7 @@
 
     function showCrossSellPLForm() {
         const app = getApp(); 
+        if(!app) return;
         let principalAmt = (app.loanDetails && app.loanDetails.principal) ? app.loanDetails.principal : 0;
         let surplus = (app.maxEligible || 0) - parseFloat(principalAmt);
         document.getElementById('cs_pl_max').innerText = `₹${surplus.toLocaleString()}`; document.getElementById('cs_pl_amt').value = surplus;
@@ -1118,6 +1191,7 @@
 
     async function disburseCrossSellPL() {
         const app = getApp(); 
+        if(!app) return;
         let principalAmt = (app.loanDetails && app.loanDetails.principal) ? app.loanDetails.principal : 0;
         let surplus = (app.maxEligible || 0) - parseFloat(principalAmt);
         let reqAmt = parseFloat(document.getElementById('cs_pl_amt').value);
@@ -1132,17 +1206,20 @@
         openActiveEdit(app.appId);
     }
 
-    async function toggleCardBlock() { const app = getApp(); app.cc_blocked = !app.cc_blocked; saveDB(); openActiveEdit(app.appId); }
+    async function toggleCardBlock() { const app = getApp(); if(app) { app.cc_blocked = !app.cc_blocked; saveDB(); openActiveEdit(app.appId); } }
 
     async function changeCardLimit() {
-        const app = getApp(); const newLimit = await uiPromptRemarks(`Current Limit: ₹${(app.cc_limit || 0).toLocaleString()}<br>Enter NEW Limit (INR):`, "MANAGE CREDIT LIMIT", "UPDATE LIMIT", "number");
+        const app = getApp(); 
+        if(!app) return;
+        const newLimit = await uiPromptRemarks(`Current Limit: ₹${(app.cc_limit || 0).toLocaleString()}<br>Enter NEW Limit (INR):`, "MANAGE CREDIT LIMIT", "UPDATE LIMIT", "number");
         if(newLimit) { app.cc_limit = parseFloat(newLimit); saveDB(); openActiveEdit(app.appId); }
     }
 
     async function requestForceChange() {
         const remarks = await uiPromptRemarks("Master Ledger records are locked.<br>Enter formal justification to unlock fields:", "AUDIT LOG PROTOCOL");
         if(remarks) {
-            getApp().editLog = (getApp().editLog || "") + ` | Unlock: ${remarks}`;
+            const app = getApp();
+            if(app) { app.editLog = (app.editLog || "") + ` | Unlock: ${remarks}`; }
             ['e_mobile','e_address','e_b_name','e_b_acc','e_b_ifsc', 'e_cd_name', 'e_cd_imei1', 'e_cd_imei2', 'e_cd_dealer', 'e_bike_name', 'e_bike_engine', 'e_bike_chassis', 'e_bike_dealer', 'e_pl_purpose'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).disabled = false; });
             document.getElementById('edit_actions').classList.add('hidden'); document.getElementById('save_actions').classList.remove('hidden');
         }
@@ -1150,6 +1227,7 @@
 
     async function saveActiveEdit() {
         await showSysLoader("UPDATING LEDGER...", 1000); const app = getApp();
+        if(!app) return;
         app.mobile = document.getElementById('e_mobile').value; app.address = document.getElementById('e_address').value;
         app.bankName = document.getElementById('e_b_name').value; app.bankAcc = document.getElementById('e_b_acc').value; app.bankIfsc = document.getElementById('e_b_ifsc').value;
         if (app.loanType === 'CD') { app.p_name = document.getElementById('e_cd_name').value; app.imei1 = document.getElementById('e_cd_imei1').value; app.imei2 = document.getElementById('e_cd_imei2').value; app.dealerName = document.getElementById('e_cd_dealer').value; } 
@@ -1159,13 +1237,22 @@
     }
 
     async function performSearch() {
-        const q = document.getElementById('search_query').value.toUpperCase().trim(); const res = document.getElementById('search-results'); res.innerHTML = ''; if(!q) return;
+        const q = document.getElementById('search_query').value.toUpperCase().trim(); 
+        const res = document.getElementById('search-results'); 
+        if(!res) return;
+        res.innerHTML = ''; 
+        if(!q) return;
+        
         await showSysLoader("EXECUTING QUERY...", 600);
-        const found = db.filter(a => (a.appId && a.appId.includes(q)) || (a.loanId && a.loanId.includes(q)) || (a.fname && a.fname.toUpperCase().includes(q)));
-        if(!found.length) return res.innerHTML = '<div class="panel">0 Records Found.</div>';
+        const found = db.filter(a => ((a.appId && a.appId.includes(q)) || (a.loanId && a.loanId.includes(q)) || (a.fname && a.fname.toUpperCase().includes(q))));
+        if(!found.length) {
+            res.innerHTML = '<div class="panel">0 Records Found.</div>';
+            return;
+        }
+        
         found.forEach(app => {
             res.innerHTML += `<div class="panel"><div style="display:flex; justify-content:space-between; margin-bottom:8px;"><strong style="text-transform:uppercase;">${app.fname || ''} ${app.lname || ''}</strong><span class="badge ${app.status==='ACTIVE'?'badge-success':(app.status && app.status.includes('REJECTED')?'badge-danger':'badge-pending')}">${(app.status || 'UNKNOWN').replace('_', ' ')}</span></div>
-            <div class="data-grid" style="margin-bottom:0;"><div><span>App ID</span><strong style="font-family:monospace;">${app.appId}</strong></div>${app.loanId ? `<div><span>Loan ID</span><strong style="font-family:monospace;">${app.loanId}</strong></div>` : '<div></div>'}</div></div>`;
+            <div class="data-grid" style="margin-bottom:0;"><div><span>App ID</span><strong style="font-family:monospace;">${app.appId || 'N/A'}</strong></div>${app.loanId ? `<div><span>Loan ID</span><strong style="font-family:monospace;">${app.loanId}</strong></div>` : '<div></div>'}</div></div>`;
         });
     }
 </script>
