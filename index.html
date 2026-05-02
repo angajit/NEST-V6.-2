@@ -754,8 +754,8 @@
                 document.getElementById('asset_header_title').innerText = "Consumer Durable Details";
                 document.getElementById('asset_cd_fields').classList.remove('hidden');
                 document.getElementById('ap_cd_type').value = app.p_type || 'Smartphone'; toggleProductFields();
-                document.getElementById('ap_os').value = app.p_os || 'Android';
-                document.getElementById('ap_other_name').value = app.p_other_name || ''; 
+                if(document.getElementById('ap_os')) document.getElementById('ap_os').value = app.p_os || 'Android';
+                if(document.getElementById('ap_other_name')) document.getElementById('ap_other_name').value = app.p_other_name || ''; 
                 document.getElementById('ap_cd_name').value = app.p_name || ''; 
                 document.getElementById('ap_cd_imei1').value = app.imei1 || ''; 
                 document.getElementById('ap_cd_imei2').value = app.imei2 || '';
@@ -769,7 +769,7 @@
 
             document.getElementById('ap_dealerId').value = app.p_dealerId || ''; 
             document.getElementById('dealer-result').innerText = app.dealerVerified ? `[ VERIFIED ] ${app.dealerName}` : '';
-            document.getElementById('ap_sku').value = app.p_sku || '';
+            if(document.getElementById('ap_sku')) document.getElementById('ap_sku').value = app.p_sku || '';
             document.getElementById('ap_value').value = app.prodValue || '';
             document.getElementById('view-asset-product').classList.add('active'); 
         } else { 
@@ -780,7 +780,15 @@
     }
 
     // --- 4. UNDERWRITING ENTRY ---
-    function toggleProductFields() { document.getElementById('p_other_sec').className = document.getElementById('ap_cd_type').value === 'Other' ? 'form-row' : 'hidden'; document.getElementById('p_smartphone_sec').className = document.getElementById('ap_cd_type').value === 'Smartphone' ? 'form-row' : 'hidden'; }
+    function toggleProductFields() { 
+        let cdType = document.getElementById('ap_cd_type');
+        if(!cdType) return;
+        let pOther = document.getElementById('p_other_sec');
+        let pSmart = document.getElementById('p_smartphone_sec');
+        if(pOther) pOther.className = cdType.value === 'Other' ? 'form-row' : 'hidden'; 
+        if(pSmart) pSmart.className = cdType.value === 'Smartphone' ? 'form-row' : 'hidden'; 
+    }
+    
     async function verifyDealer() {
         const did = document.getElementById('ap_dealerId').value.trim(); const res = document.getElementById('dealer-result');
         await sleep(600);
