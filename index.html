@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nest Finserv | DSA Core Module v8.2</title>
+    <title>Nest Finserv | DSA Core Module v9.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         /* Enterprise Fintech Theme */
@@ -164,15 +164,9 @@
                 <div class="form-row"><label>Last Name</label><input type="text" id="c_lname" required></div>
                 <div class="form-row"><label>Mobile Number</label><input type="tel" id="c_mobile" maxlength="10" required></div>
                 
-                <div class="data-grid" style="margin-bottom: 16px; background: transparent; padding: 0; border: none; gap: 8px;">
-                    <div>
-                        <label>Date of Birth</label>
-                        <input type="date" id="c_dob" oninput="calcAge(this.value)" required>
-                    </div>
-                    <div>
-                        <label>System Age</label>
-                        <input type="text" id="c_age" readonly placeholder="Auto-calculated">
-                    </div>
+                <div class="form-row">
+                    <label>Date of Birth <span id="age_badge" style="color:var(--brand-primary); float:right; font-weight:800; font-size:0.85rem;"></span></label>
+                    <input type="date" id="c_dob" oninput="calcAge(this.value)" required>
                 </div>
                 
                 <div class="form-row">
@@ -378,6 +372,7 @@
             </div>
 
             <div class="form-row"><label id="lbl_cost">ASSET COST (INR)</label><input type="number" id="l_cost" oninput="calcEMI()"></div>
+            
             <div id="sec_dp" class="form-row"><label>Downpayment (INR)</label><input type="number" id="l_dp" oninput="calcEMI()"></div>
             
             <div class="form-row"><label>Interest Rate (% APR)</label><input type="number" id="l_apr" oninput="calcEMI()"></div>
@@ -438,7 +433,7 @@
                         <option value="LLP">LLP</option>
                     </select>
                 </div>
-                <div class="form-row"><label>Legal Owner Name(s)</label><input type="text" id="d_owner" required></div>
+                <div class="form-row"><label>Legal Owner Name(s)</label><input type="text" id="d_owner" placeholder="e.g. Amrit Das" required></div>
                 <div class="form-row"><label>Mobile Number</label><input type="tel" id="d_mobile" maxlength="10" required></div>
                 <div class="form-row"><label>Email Address</label><input type="email" id="d_email" required></div>
                 <div class="form-row"><label>Dealership Full Address</label><textarea id="d_address" rows="2" required></textarea></div>
@@ -506,7 +501,7 @@
                             <div>
                                 <div class="cc-valid">Valid Thru</div>
                                 <div class="cc-date">12/28</div>
-                                <div class="cc-name" id="cc_name_display">JOHN DOE</div>
+                                <div class="cc-name" id="cc_name_display">ANGAJIT SARKAR</div>
                             </div>
                             <div class="cc-network">
                                 <div class="circle red"></div>
@@ -593,7 +588,7 @@
     <nav class="nav-bar">
         <div class="nav-item active" onclick="nav('view-create', this)">Create</div>
         <div class="nav-item" onclick="nav('view-pipeline', this)">Pipeline</div>
-        <div class="nav-item" onclick="nav('view-exceptions', this)">Review</div>
+        <div class="nav-item" onclick="nav('view-exceptions', this)">Exceptions</div>
         <div class="nav-item" onclick="nav('view-portfolio', this)">Ledger</div>
         <div class="nav-item" onclick="nav('view-dealers', this)">Dealers</div>
         <div class="nav-item" onclick="nav('view-search', this)">Search</div>
@@ -648,29 +643,32 @@
 
 <script>
     // --- AGGRESSIVE DATA INTEGRITY SWEEPER (PREVENTS BLANK SCREENS) ---
-    // If the browser data is corrupted, this completely strips out the bad files automatically.
-    let rawData = localStorage.getItem('nestFinservDB');
-    let rawDB = [];
+    // If the browser data is corrupted from older tests, this completely strips out the bad files safely.
+    let db = [];
     try {
-        rawDB = JSON.parse(rawData);
-        if (!Array.isArray(rawDB)) rawDB = []; 
+        let rawData = localStorage.getItem('nestFinservDB');
+        if (rawData) {
+            let parsed = JSON.parse(rawData);
+            if (Array.isArray(parsed)) {
+                db = parsed.filter(app => app && typeof app === 'object' && typeof app.appId === 'string' && typeof app.status === 'string');
+            }
+        }
     } catch(e) {
-        rawDB = []; 
+        console.error("Critical DB corruption detected. Wiping memory to auto-heal.");
+        localStorage.removeItem('nestFinservDB');
+        db = []; 
     }
     
-    let db = rawDB.filter(app => {
-        if (!app || typeof app !== 'object') return false;
-        if (typeof app.appId !== 'string') return false;
-        if (typeof app.status !== 'string') return false;
-        return true;
-    }); 
-    
     let currentAppId = localStorage.getItem('nestCurrentAppId') || null;
-    let draftApp = JSON.parse(localStorage.getItem('nestDraftApp')) || {};
-    let cibilRegistry = JSON.parse(localStorage.getItem('nestCibilRegistry')) || {}; 
+    let draftApp = {};
+    try { draftApp = JSON.parse(localStorage.getItem('nestDraftApp')) || {}; } catch(e) {}
+    
+    let cibilRegistry = {};
+    try { cibilRegistry = JSON.parse(localStorage.getItem('nestCibilRegistry')) || {}; } catch(e) {}
     
     // Custom Dynamic Dealer Registry
-    let customDealers = JSON.parse(localStorage.getItem('nestCustomDealers')) || {};
+    let customDealers = {};
+    try { customDealers = JSON.parse(localStorage.getItem('nestCustomDealers')) || {}; } catch(e) {}
     const BASE_DEALERS = { "DT21011721": "Maa Electronics", "DT21011722": "A to Z Mobile", "DT21011723": "Shani Electronis", "DT21011724": "DEEP Mobiles", "DT210117": "Shankar Mobiles", "DT21011725": "Sengupta Motors", "DT21011726": "Chowdhury Tvs" };
 
     function getDealerName(did) {
@@ -746,29 +744,36 @@
         });
     }
 
-    // FORMAL LIVE AGE CALCULATOR
+    // LIVE AGE CALCULATOR - SAFE VERSION
     function calcAge(dobStr) {
-        let ageField = document.getElementById('c_age');
-        if(!ageField) return;
-        if(!dobStr) { ageField.value = ""; return; }
+        let badge = document.getElementById('age_badge');
+        if(!badge) return;
+        if(!dobStr) { badge.innerText = ""; return; }
         try {
             let dob = new Date(dobStr);
             let ageDate = new Date(Date.now() - dob.getTime());
             let age = Math.abs(ageDate.getUTCFullYear() - 1970);
-            if(!isNaN(age)) ageField.value = age + " Years";
-            else ageField.value = "";
-        } catch(e) { ageField.value = ""; }
+            if(!isNaN(age)) badge.innerText = `(${age} Years)`;
+            else badge.innerText = "";
+        } catch(e) { badge.innerText = ""; }
     }
 
+    // GLOBAL CRASH HANDLER ON LOAD
     window.onload = () => { 
-        if (currentAppId) setAppIdContext(currentAppId); 
-        document.querySelectorAll('#form-create input, #form-create select').forEach(el => {
-            el.addEventListener('input', (e) => {
-                draftApp[e.target.id] = e.target.value;
-                localStorage.setItem('nestDraftApp', JSON.stringify(draftApp));
+        try {
+            if (currentAppId) setAppIdContext(currentAppId); 
+            document.querySelectorAll('#form-create input, #form-create select').forEach(el => {
+                el.addEventListener('input', (e) => {
+                    draftApp[e.target.id] = e.target.value;
+                    localStorage.setItem('nestDraftApp', JSON.stringify(draftApp));
+                });
             });
-        });
-        toggleLoanTypeFields();
+            if(draftApp['c_dob']) calcAge(draftApp['c_dob']);
+            toggleLoanTypeFields();
+        } catch (e) {
+            console.error("Draft memory corrupted. Healing...", e);
+            localStorage.removeItem('nestDraftApp');
+        }
     };
 
     async function nav(viewId, navBtn = null) {
@@ -831,7 +836,7 @@
             draftApp = {}; localStorage.removeItem('nestDraftApp');
             document.getElementById('form-create').reset();
             document.querySelectorAll('#form-create input').forEach(i => i.value = ''); 
-            document.getElementById('c_age').value = '';
+            if(document.getElementById('age_badge')) document.getElementById('age_badge').innerText = '';
             document.getElementById('c_loan_type').value = 'CD';
             toggleLoanTypeFields();
             toggleSalariedFields();
@@ -1017,7 +1022,6 @@
         if(app) { app.plPurpose = document.getElementById('pl_purpose').value; saveDB(); await executeAutomatedPolicyEngine(); }
     }
 
-    // --- ENHANCED LIMIT & AGE ALGORITHMS ---
     async function executeAutomatedPolicyEngine() {
         await showSysLoader("EVALUATING MULTI-FACTOR RISK PROFILE...", 2500);
         const app = getApp();
@@ -1035,16 +1039,13 @@
         let code = 'XX', status = 'PENDING', reason = "", dpP = 0, apr = 0;
         const age = (new Date() - new Date(app.dob)) / (1000 * 60 * 60 * 24 * 365.25);
         
-        // Strict Minimum Age Policy
         if (age < 18) {
             status = 'REJECTED'; reason = "Policy Decline: Applicant Under 18";
         }
 
-        // 18-21 Co-Applicant Mandate Lock
         let requiresCoApp = (age >= 18 && age < 21);
         app.requiresCoApp = requiresCoApp;
 
-        // Base Limit Engine (if not hard-rejected)
         let baseMult = 0;
         if (status !== 'REJECTED') {
             if (cibil < 400) { code = 'XX'; status = 'REJECTED'; reason = `SEVERE DEROGATORY (${cibil})`; }
@@ -1057,7 +1058,6 @@
             else { code = 'FR'; status = 'APPROVED'; dpP = 0; apr = 8; baseMult = 8.0; }
         }
 
-        // Limit Multipliers
         let occMult = (app.occ === 'Salaried') ? 3.0 : (app.occ === 'Student' ? 0.3 : 1.0);
         let assetMult = (app.loanType === 'Bike') ? 2.5 : 1.0; 
         
@@ -1101,7 +1101,7 @@
         
         let reqAmt;
         if(app.loanType === 'PL') reqAmt = app.plAmountReq;
-        else if (app.loanType === 'GL') reqAmt = app.maxEligible; // GL strictly defaults request to Assessed value
+        else if (app.loanType === 'GL') reqAmt = app.maxEligible; 
         else reqAmt = app.prodValue;
 
         document.getElementById('lbl_req_disp').innerText = app.loanType === 'GL' ? "Appraised Gold Value" : "Requested Amount";
@@ -1140,12 +1140,14 @@
             document.getElementById('lbl_cost').innerText = app.loanType === 'GL' ? "APPROVED GOLD ADVANCE (INR)" : "APPROVED LOAN AMOUNT (INR)";
             document.getElementById('l_cost').value = Math.min(reqAmt, app.maxEligible);
             document.getElementById('sec_dp').classList.add('hidden'); 
+            document.getElementById('sec_dp').style.display = 'none'; // HARD HIDE DOWNPAYMENT
             document.getElementById('lbl_disb').innerText = "Cust. Bank Disbursement";
             document.getElementById('l_dp').value = 0; document.getElementById('l_apr').value = defApr;
         } else {
             document.getElementById('lbl_cost').innerText = "ASSET COST (INR)";
             document.getElementById('l_cost').value = app.prodValue || 0;
             document.getElementById('sec_dp').classList.remove('hidden');
+            document.getElementById('sec_dp').style.display = 'block'; // HARD SHOW DOWNPAYMENT
             document.getElementById('lbl_disb').innerText = "Dealer Disbursement";
             let policyLoan = app.prodValue * (1 - (defDpPercent / 100));
             let actualLoan = Math.min(policyLoan, app.maxEligible);
@@ -1394,7 +1396,7 @@
         if(remarks) { setAppIdContext(id); const app = getApp(); if(app) { app.overrideLog = remarks; await showSysLoader("OVERRIDING...", 1000); openStructuring(app, 60, 33, true); } }
     }
 
-    // --- BULLETPROOF PORTFOLIO RENDERING ---
+    // --- PORTFOLIO RENDERING ---
     function renderPortfolio() {
         const cont = document.getElementById('portfolio-list'); 
         if(!cont) return;
