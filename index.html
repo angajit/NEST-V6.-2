@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nest Finserv | DSA Core Module v7.8</title>
+    <title>Nest Finserv | DSA Core Module v8.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         /* Enterprise Fintech Theme */
@@ -32,7 +32,7 @@
         .sys-time { font-size: 0.75rem; color: #9CA3AF; font-weight: 500;}
 
         .nav-bar { position: fixed; bottom: 0; width: 100%; max-width: 500px; background: var(--surface); display: flex; border-top: 1px solid var(--border-light); z-index: 100; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;}
-        .nav-item { flex: 1; padding: 14px 0; text-align: center; font-size: 0.65rem; color: var(--text-muted); cursor: pointer; text-transform: uppercase; font-weight: 700; transition: 0.2s; letter-spacing: 0.5px;}
+        .nav-item { flex: 1; padding: 12px 0; text-align: center; font-size: 0.6rem; color: var(--text-muted); cursor: pointer; text-transform: uppercase; font-weight: 700; transition: 0.2s; letter-spacing: 0px;}
         .nav-item.active { color: var(--brand-primary); border-bottom: 3px solid var(--brand-primary); background: #F9FAFB; color: var(--brand-dark);}
 
         .view-container { display: none; padding: 16px; animation: fadeIn 0.2s ease; }
@@ -86,6 +86,28 @@
         .ui-modal-body { padding: 0 20px 20px; font-size: 0.9rem; color: var(--text-muted); line-height: 1.6;}
         .ui-modal-footer { padding: 16px; background: #F9FAFB; display: flex; gap: 10px; justify-content: center; border-top: 1px solid var(--border-light);}
         .ui-modal-footer .btn { margin: 0; padding: 12px 24px; width: auto; font-size: 0.8rem;}
+
+        /* --- VIRTUAL CREDIT CARD UI --- */
+        .credit-card {
+            background: linear-gradient(135deg, #0A2463, #000000); 
+            border-radius: 12px; padding: 20px; color: white; position: relative;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3); overflow: hidden; margin-bottom: 20px;
+        }
+        .cc-bank { font-size: 0.75rem; font-weight: 800; letter-spacing: 1.5px; color: rgba(255,255,255,0.9); margin-bottom: 15px;}
+        .cc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;}
+        .cc-tier { font-size: 0.8rem; font-style: italic; letter-spacing: 1px; color: #E5E7EB;}
+        .cc-logo { font-weight: 800; font-size: 1.1rem; text-align: right; line-height: 1.1; letter-spacing: 1px;}
+        .cc-chip { width: 35px; height: 25px; background: linear-gradient(135deg, #e5c158, #b08d27); border-radius: 4px;}
+        .cc-number { font-family: monospace; font-size: 1.4rem; letter-spacing: 3px; margin: 15px 0 10px 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);}
+        .cc-bottom { display: flex; justify-content: space-between; align-items: flex-end;}
+        .cc-valid { font-size: 0.5rem; text-transform: uppercase; color: #D1D5DB;}
+        .cc-date { font-size: 0.8rem; font-family: monospace; letter-spacing: 1px;}
+        .cc-name { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px;}
+        .cc-network { display: flex; gap: -5px; }
+        .circle { width: 24px; height: 24px; border-radius: 50%; opacity: 0.8;}
+        .circle.red { background: #EB001B; transform: translateX(10px);}
+        .circle.yellow { background: #F79E1B; mix-blend-mode: multiply;}
+        .cc-blocked-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; justify-content:center; align-items:center; font-size:1.5rem; font-weight:bold; color:#FCA5A5; letter-spacing:2px; backdrop-filter: grayscale(1); z-index: 10;}
 
         /* Off-Screen PDF Template */
         #pdf-export-container { position: absolute; left: -9999px; top: 0; width: 800px; background: white; color: black; font-family: 'Times New Roman', Times, serif; }
@@ -148,7 +170,11 @@
                 <div class="form-row"><label>First Name</label><input type="text" id="c_fname" required></div>
                 <div class="form-row"><label>Last Name</label><input type="text" id="c_lname" required></div>
                 <div class="form-row"><label>Mobile Number</label><input type="tel" id="c_mobile" maxlength="10" required></div>
-                <div class="form-row"><label>Date of Birth</label><input type="date" id="c_dob" required></div>
+                
+                <div class="form-row">
+                    <label>Date of Birth <span id="age_badge" style="color:var(--brand-primary); float:right;"></span></label>
+                    <input type="date" id="c_dob" oninput="calcAge(this.value)" required>
+                </div>
                 
                 <div class="form-row">
                     <label>Occupation Type</label>
@@ -398,6 +424,31 @@
         <div id="portfolio-list"></div>
     </div>
 
+    <div id="view-dealers" class="view-container">
+        <div class="panel-header">Partner Onboarding</div>
+        <div class="panel">
+            <form onsubmit="event.preventDefault(); onboardDealer();">
+                <div class="form-row"><label>Dealership / Store Name</label><input type="text" id="d_name" placeholder="e.g. Supreme Electronics" required></div>
+                <div class="form-row">
+                    <label>Entity Type</label>
+                    <select id="d_type">
+                        <option value="Proprietorship">Proprietorship</option>
+                        <option value="Partnership">Partnership Firm</option>
+                        <option value="Private Limited">Private Limited</option>
+                        <option value="LLP">LLP</option>
+                    </select>
+                </div>
+                <div class="form-row"><label>Legal Owner Name(s)</label><input type="text" id="d_owner" required></div>
+                <div class="form-row"><label>Mobile Number</label><input type="tel" id="d_mobile" maxlength="10" required></div>
+                <div class="form-row"><label>Email Address</label><input type="email" id="d_email" required></div>
+                <div class="form-row"><label>Dealership Full Address</label><textarea id="d_address" rows="2" required></textarea></div>
+                <button type="submit" class="btn btn-black">GENERATE ID & ONBOARD</button>
+            </form>
+        </div>
+        <div class="panel-header" style="margin-top: 24px;">Active Network Partners</div>
+        <div id="dealer-list"></div>
+    </div>
+
     <div id="view-active-edit" class="view-container">
         <button type="button" class="btn btn-outline" onclick="nav('view-portfolio')" style="margin-bottom:16px; width:auto; padding: 10px 16px; font-size:0.75rem;">BACK TO LEDGER</button>
         <div class="panel-header">Account Management</div>
@@ -542,8 +593,9 @@
     <nav class="nav-bar">
         <div class="nav-item active" onclick="nav('view-create', this)">Create</div>
         <div class="nav-item" onclick="nav('view-pipeline', this)">Pipeline</div>
-        <div class="nav-item" onclick="nav('view-exceptions', this)">Exceptions</div>
+        <div class="nav-item" onclick="nav('view-exceptions', this)">Review</div>
         <div class="nav-item" onclick="nav('view-portfolio', this)">Ledger</div>
+        <div class="nav-item" onclick="nav('view-dealers', this)">Dealers</div>
         <div class="nav-item" onclick="nav('view-search', this)">Search</div>
     </nav>
 </div>
@@ -570,8 +622,8 @@
         <br>
         <p><strong>1. Particulars of Loan Sanctioned</strong></p>
         <table class="pdf-table">
-            <tr><td>Loan Type</td><td id="pdf_t_type"></td></tr>
-            <tr><td>Sanction Amount (Total)</td><td id="pdf_t_amt"></td></tr>
+            <tr><td>Facility Type</td><td id="pdf_t_type"></td></tr>
+            <tr><td>Sanction Amount</td><td id="pdf_t_amt"></td></tr>
             <tr><td>Loan Tenor</td><td id="pdf_t_tenor"></td></tr>
             <tr><td>Rate of Interest (APR)</td><td id="pdf_t_apr"></td></tr>
             <tr><td>Monthly EMI</td><td id="pdf_t_emi"></td></tr>
@@ -601,6 +653,16 @@
     let currentAppId = localStorage.getItem('nestCurrentAppId') || null;
     let draftApp = JSON.parse(localStorage.getItem('nestDraftApp')) || {};
     let cibilRegistry = JSON.parse(localStorage.getItem('nestCibilRegistry')) || {}; 
+    
+    // Custom Dynamic Dealer Registry
+    let customDealers = JSON.parse(localStorage.getItem('nestCustomDealers')) || {};
+    const BASE_DEALERS = { "DT21011721": "Maa Electronics", "DT21011722": "A to Z Mobile", "DT21011723": "Shani Electronis", "DT21011724": "DEEP Mobiles", "DT210117": "Shankar Mobiles", "DT21011725": "Sengupta Motors", "DT21011726": "Chowdhury Tvs" };
+
+    function getDealerName(did) {
+        if(customDealers[did]) return customDealers[did].name;
+        if(BASE_DEALERS[did]) return BASE_DEALERS[did];
+        return null;
+    }
 
     function saveDB() { localStorage.setItem('nestFinservDB', JSON.stringify(db)); }
     function setAppIdContext(id) { 
@@ -617,7 +679,6 @@
         if(app) { app[key] = value; saveDB(); }
     }
 
-    const DEALERS = { "DT21011721": "Maa Electronics", "DT21011722": "A to Z Mobile", "DT21011723": "Shani Electronis", "DT21011724": "DEEP Mobiles", "DT210117": "Shankar Mobiles", "DT21011725": "Sengupta Motors", "DT21011726": "Chowdhury Tvs" };
     const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
     const genId = prefix => prefix + Math.floor(Math.random() * 900000 + 100000);
     const getRandInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
@@ -678,9 +739,18 @@
                 localStorage.setItem('nestDraftApp', JSON.stringify(draftApp));
             });
         });
-        // Initial setup for grids
         toggleLoanTypeFields();
     };
+
+    // Live Age Calculator
+    function calcAge(dobStr) {
+        let badge = document.getElementById('age_badge');
+        if(!dobStr) { badge.innerText = ""; return; }
+        let dob = new Date(dobStr);
+        let ageDate = new Date(Date.now() - dob.getTime());
+        let age = Math.abs(ageDate.getUTCFullYear() - 1970);
+        badge.innerText = `(${age} Years)`;
+    }
 
     async function nav(viewId, navBtn = null) {
         try {
@@ -692,11 +762,13 @@
             if(viewId === 'view-create') {
                 Object.keys(draftApp).forEach(key => { if(document.getElementById(key)) document.getElementById(key).value = draftApp[key]; });
                 toggleLoanTypeFields(); toggleSalariedFields(); 
+                calcAge(document.getElementById('c_dob').value);
             }
 
             if(viewId === 'view-pipeline') renderPipeline();
             if(viewId === 'view-exceptions') renderExceptions();
             if(viewId === 'view-portfolio') renderPortfolio();
+            if(viewId === 'view-dealers') renderDealers();
             window.scrollTo(0, 0);
         } catch(e) {
             console.error("Navigation error:", e);
@@ -720,14 +792,10 @@
     function toggleLoanTypeFields() { 
         let val = document.getElementById('c_loan_type').value;
         let field = document.getElementById('pl_amount_field');
-        let lbl = document.getElementById('lbl_req_amt');
+        // Strictly hidden for GL and CD/Bike
         if(field) {
             if (val === 'PL') {
                 field.classList.remove('hidden');
-                if(lbl) lbl.innerText = "Requested Loan Amount (₹)";
-            } else if (val === 'GL') {
-                field.classList.remove('hidden');
-                if(lbl) lbl.innerText = "Requested Advance Against Gold (₹)";
             } else {
                 field.classList.add('hidden');
             }
@@ -743,10 +811,10 @@
         try {
             const type = document.getElementById('c_loan_type').value;
             const plAmt = document.getElementById('c_pl_amount').value;
-            if ((type === 'PL' || type === 'GL') && !plAmt) return uiAlert("Requested Amount missing.", "INPUT ERROR");
+            if (type === 'PL' && !plAmt) return uiAlert("Requested Loan Amount missing.", "INPUT ERROR");
 
             const app = {
-                appId: genId('APP'), loanType: type, plAmountReq: plAmt,
+                appId: genId('APP'), loanType: type, plAmountReq: plAmt || null,
                 fname: document.getElementById('c_fname').value, lname: document.getElementById('c_lname').value,
                 mobile: document.getElementById('c_mobile').value, dob: document.getElementById('c_dob').value,
                 occ: document.getElementById('c_occ').value, address: document.getElementById('c_address').value,
@@ -759,7 +827,8 @@
             draftApp = {}; localStorage.removeItem('nestDraftApp');
             document.getElementById('form-create').reset();
             document.querySelectorAll('#form-create input').forEach(i => i.value = ''); 
-            setFacility('CD'); // Reset grid UI
+            document.getElementById('age_badge').innerText = '';
+            setFacility('CD'); 
             toggleSalariedFields();
             
             await uiAlert(`Application recorded successfully.<br><br>System ID: <b>${app.appId}</b>`, "OPERATION SUCCESSFUL");
@@ -896,10 +965,19 @@
     
     async function verifyDealer() {
         const did = document.getElementById('ap_dealerId').value.trim(); const res = document.getElementById('dealer-result');
-        await sleep(600);
+        await showSysLoader("VERIFYING DEALER...", 600);
         const app = getApp();
-        if(DEALERS[did]) { res.innerHTML = `[ VERIFIED ] ${DEALERS[did]}`; res.style.color = 'var(--success)'; if(app) { app.dealerVerified = true; app.dealerName = DEALERS[did]; autoSaveApp('dealerVerified', true); autoSaveApp('dealerName', DEALERS[did]); } }
-        else { res.innerHTML = `[ VERIFICATION FAILED ]`; res.style.color = 'var(--danger)'; if(app) app.dealerVerified = false; }
+        const dName = getDealerName(did);
+
+        if(dName) { 
+            res.innerHTML = `[ VERIFIED ] ${dName}`; 
+            res.style.color = 'var(--success)'; 
+            if(app) { app.dealerVerified = true; app.dealerName = dName; autoSaveApp('dealerVerified', true); autoSaveApp('dealerName', dName); } 
+        } else { 
+            res.innerHTML = `[ VERIFICATION FAILED ]`; 
+            res.style.color = 'var(--danger)'; 
+            if(app) app.dealerVerified = false; 
+        }
     }
     
     async function submitAssetToUnderwriting() {
@@ -934,6 +1012,7 @@
         if(app) { app.plPurpose = document.getElementById('pl_purpose').value; saveDB(); await executeAutomatedPolicyEngine(); }
     }
 
+    // --- ENHANCED LIMIT & AGE ALGORITHMS ---
     async function executeAutomatedPolicyEngine() {
         await showSysLoader("EVALUATING MULTI-FACTOR RISK PROFILE...", 2500);
         const app = getApp();
@@ -1015,7 +1094,11 @@
         document.getElementById('l_cibil').innerText = app.cibil + (app.hasCoApp ? ' (+CO)' : '') + (app.hasGold ? ' (+GL)' : ''); 
         document.getElementById('l_tier').innerText = app.tier;
         
-        let reqAmt = (app.loanType === 'PL' || app.loanType === 'GL') ? app.plAmountReq : app.prodValue;
+        let reqAmt;
+        if(app.loanType === 'PL') reqAmt = app.plAmountReq;
+        else if (app.loanType === 'GL') reqAmt = app.maxEligible; // GL defaults request to Assessed value
+        else reqAmt = app.prodValue;
+
         document.getElementById('disp_req_amt').innerText = `₹${parseFloat(reqAmt || 0).toLocaleString()}`;
         document.getElementById('disp_max_limit').innerText = `₹${parseFloat(app.maxEligible || 0).toLocaleString()}`;
 
@@ -1049,7 +1132,7 @@
 
         if(app.loanType === 'PL' || app.loanType === 'GL') {
             document.getElementById('lbl_cost').innerText = app.loanType === 'GL' ? "APPROVED GOLD ADVANCE (INR)" : "APPROVED LOAN AMOUNT (INR)";
-            document.getElementById('l_cost').value = Math.min(app.plAmountReq, app.maxEligible);
+            document.getElementById('l_cost').value = Math.min(reqAmt, app.maxEligible);
             document.getElementById('sec_dp').classList.add('hidden'); 
             document.getElementById('lbl_disb').innerText = "Cust. Bank Disbursement";
             document.getElementById('l_dp').value = 0; document.getElementById('l_apr').value = defApr;
@@ -1104,7 +1187,7 @@
         if(app) { app.maxEligible = (app.maxEligible || 0) + extraLimit; app.hasCoApp = true; app.coAppDetails = { pan, cibil, extraLimit }; saveDB(); }
         await uiAlert(`Co-Applicant Approved!<br>CIBIL: ${cibil}<br>Additional Limit: ₹${extraLimit.toLocaleString()}`, "LIMIT ENHANCED");
         
-        // BUG FIX: Memory Cleared
+        // BUG FIX: Form fields are fully cleared from memory after success
         document.getElementById('co_name').value = ''; document.getElementById('co_pan').value = ''; document.getElementById('co_income').value = '';
         document.getElementById('co_app_form').classList.add('hidden');
         openStructuring(app, app.loanType==='PL'?0:20, 16, app?app.forceUnderwritten:false); 
@@ -1215,6 +1298,47 @@
 
         const element = document.getElementById('sanction-letter-template');
         html2pdf().set({ margin: 10, filename: `Sanction_Letter_${app.appId}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(element).save();
+    }
+
+    // --- DEALER ONBOARDING MODULE ---
+    async function onboardDealer() {
+        await showSysLoader("ONBOARDING DEALER...", 1000);
+        let did = 'DT' + Math.floor(Math.random() * 900000 + 100000);
+        customDealers[did] = {
+            name: document.getElementById('d_name').value,
+            type: document.getElementById('d_type').value,
+            owner: document.getElementById('d_owner').value,
+            mobile: document.getElementById('d_mobile').value,
+            email: document.getElementById('d_email').value,
+            address: document.getElementById('d_address').value,
+            status: 'ACTIVE'
+        };
+        localStorage.setItem('nestCustomDealers', JSON.stringify(customDealers));
+        
+        // Reset form
+        document.getElementById('d_name').value = '';
+        document.getElementById('d_owner').value = '';
+        document.getElementById('d_mobile').value = '';
+        document.getElementById('d_email').value = '';
+        document.getElementById('d_address').value = '';
+        
+        await uiAlert(`Partner Dealership Onboarded!<br><br><b>Assigned Dealer Code:</b> ${did}`, "NETWORK EXPANDED");
+        renderDealers();
+    }
+
+    function renderDealers() {
+        let list = document.getElementById('dealer-list');
+        if(!list) return;
+        list.innerHTML = '';
+        let keys = Object.keys(customDealers);
+        if(keys.length === 0) { list.innerHTML = '<div class="panel">No custom partners onboarded yet.</div>'; return; }
+        
+        keys.forEach(k => {
+            let d = customDealers[k];
+            list.innerHTML += `<div class="list-item" style="border-left: 4px solid var(--success);">
+                <div><span class="badge badge-success">${d.type}</span><div style="font-weight:800; font-size:1.1rem;">${d.name}</div><div style="font-size:0.75rem; color:var(--text-muted); font-family:monospace; margin-top:4px;">CODE: ${k} | ${d.owner}</div></div>
+            </div>`;
+        });
     }
 
     // --- EXCEPTION RENDERING ---
