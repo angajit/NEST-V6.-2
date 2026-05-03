@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nest Finserv | DSA Core Module v7.0</title>
+    <title>Nest Finserv | DSA Core Module v7.5</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         /* Enterprise Fintech Theme */
@@ -19,6 +19,7 @@
             --success: #059669;
             --danger: #DC2626;
             --warning: #D97706;
+            --gold: #D97706;
         }
 
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
@@ -154,6 +155,7 @@
                         <option value="CD">Consumer Durable (Mobile/Appliance)</option>
                         <option value="Bike">Two Wheeler (Bike Finance)</option>
                         <option value="PL">Personal Loan</option>
+                        <option value="GL">Gold Loan (Pledge Ornaments)</option>
                     </select>
                 </div>
                 <div class="form-row"><label>First Name</label><input type="text" id="c_fname" required></div>
@@ -262,18 +264,31 @@
                     </div>
                 </div>
             </div>
-            
-            <div class="form-row" style="margin-top:16px;">
-                <label>Dealer Code</label>
-                <div class="flex-row">
-                    <input type="text" id="ap_dealerId" oninput="autoSaveApp('p_dealerId', this.value)" placeholder="e.g. DT21011721" style="flex: 1;">
-                    <button class="btn btn-black" style="width:auto; margin-top:0;" onclick="verifyDealer()">VERIFY</button>
-                </div>
-                <div id="dealer-result" style="font-size:0.8rem; margin-top:8px; font-weight:700; text-transform:uppercase;"></div>
-            </div>
 
-            <div class="form-row"><label>Invoice Value / Ex-Showroom (₹)</label><input type="number" id="ap_value" oninput="autoSaveApp('prodValue', this.value)"></div>
-            <button class="btn btn-black" onclick="submitAssetToUnderwriting()">SUBMIT FOR UNDERWRITING</button>
+            <div id="asset_gl_fields" class="hidden">
+                <div class="form-row"><label>Number of Ornaments</label><input type="number" id="ap_gl_count"></div>
+                <div class="form-row"><label>Gross Weight (Grams)</label><input type="number" id="ap_gl_gross"></div>
+                <div class="form-row"><label>Net Weight (Grams) [Excluding Stones]</label><input type="number" id="ap_gl_net"></div>
+                <div class="form-row">
+                    <label>Purity Assayed</label>
+                    <select id="ap_gl_purity"><option value="22K">22 Karat (Standard)</option><option value="24K">24 Karat (Pure)</option><option value="18K">18 Karat</option></select>
+                </div>
+                <div class="form-row"><label>Assayer / Employee ID</label><input type="text" id="ap_gl_assayer" placeholder="e.g. EMP4491"></div>
+            </div>
+            
+            <div id="dealer_section">
+                <div class="form-row" style="margin-top:16px;">
+                    <label>Dealer Code</label>
+                    <div class="flex-row">
+                        <input type="text" id="ap_dealerId" oninput="autoSaveApp('p_dealerId', this.value)" placeholder="e.g. DT21011721" style="flex: 1;">
+                        <button class="btn btn-black" style="width:auto; margin-top:0;" onclick="verifyDealer()">VERIFY</button>
+                    </div>
+                    <div id="dealer-result" style="font-size:0.8rem; margin-top:8px; font-weight:700; text-transform:uppercase;"></div>
+                </div>
+                <div class="form-row"><label>Invoice Value / Ex-Showroom (₹)</label><input type="number" id="ap_value" oninput="autoSaveApp('prodValue', this.value)"></div>
+            </div>
+            
+            <button class="btn btn-black" style="margin-top: 20px;" onclick="submitAssetToUnderwriting()">SUBMIT FOR UNDERWRITING</button>
         </div>
     </div>
 
@@ -310,6 +325,8 @@
         <div class="panel-header">Loan Structuring & Sanction</div>
 
         <div class="panel">
+            <div id="structuring_compliance_banner"></div>
+
             <div style="background: #F9FAFB; border: 1px solid var(--border-light); padding: 16px; border-radius: 4px; margin-bottom: 20px;">
                 <div class="flex-row" style="justify-content: space-between; margin-bottom: 8px;">
                     <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Requested Amount</span>
@@ -319,11 +336,12 @@
                     <span style="font-size:0.75rem; font-weight:800; color:var(--brand-primary); text-transform:uppercase;">Max Eligible Limit</span>
                     <strong id="disp_max_limit" style="font-size:1.2rem; color:var(--brand-primary);">₹0</strong>
                 </div>
-                <p style="font-size:0.65rem; color:#6B7280; margin-top:8px; font-style:italic;">*Limits secured via Multi-Variate Age/Income/CIBIL algorithms.</p>
+                <p style="font-size:0.65rem; color:#6B7280; margin-top:8px; font-style:italic;">*Limits secured via Multi-Variate Age/Income/LTV/CIBIL algorithms.</p>
             </div>
 
-            <button id="btn_req_exception" class="btn btn-outline" style="margin-bottom: 10px; font-size:0.75rem; border-color:var(--warning); color:var(--warning);" onclick="requestLimitException()">[ ! ] REQUEST LIMIT OVERRIDE</button>
-            <button id="btn_add_coapp" class="btn btn-outline hidden" style="margin-bottom: 20px; font-size:0.75rem; border-color:var(--success); color:var(--success);" onclick="showCoAppForm()">[ + ] ADD CO-APPLICANT TO ENHANCE LIMIT</button>
+            <button id="btn_req_exception" class="btn btn-outline" style="margin-bottom: 10px; font-size:0.75rem; border-color:var(--danger); color:var(--danger);" onclick="requestLimitException()">[ ! ] REQUEST LIMIT OVERRIDE</button>
+            <button id="btn_add_coapp" class="btn btn-outline hidden" style="margin-bottom: 10px; font-size:0.75rem; border-color:var(--success); color:var(--success);" onclick="showCoAppForm()">[ + ] ADD CO-APPLICANT TO ENHANCE LIMIT</button>
+            <button id="btn_add_gold" class="btn btn-outline hidden" style="margin-bottom: 20px; font-size:0.75rem; border-color:var(--gold); color:var(--gold);" onclick="showGoldPledgeForm()">[ + ] PLEDGE GOLD COLLATERAL</button>
 
             <div id="co_app_form" class="hidden panel" style="border-color: var(--success); background: #F0FDF4; margin-bottom:20px;">
                 <h4 style="color:var(--success); font-size:0.8rem; margin-bottom:12px; font-weight:800;">CO-APPLICANT DETAILS</h4>
@@ -331,6 +349,13 @@
                 <div class="form-row"><label>PAN Number</label><input type="text" id="co_pan" style="text-transform:uppercase;"></div>
                 <div class="form-row"><label>Monthly Income</label><input type="number" id="co_income"></div>
                 <button class="btn btn-success" onclick="processCoApplicant()">VERIFY & ADD LIMIT</button>
+            </div>
+
+            <div id="gold_pledge_form" class="hidden panel" style="border-color: var(--gold); background: #FFFBEB; margin-bottom:20px;">
+                <h4 style="color:var(--gold); font-size:0.8rem; margin-bottom:12px; font-weight:800;">INVENTORY / GOLD PLEDGE</h4>
+                <div class="form-row"><label>Net Weight to Pledge (Grams)</label><input type="number" id="gl_pledge_weight"></div>
+                <div class="form-row"><label>Purity Grade</label><select id="gl_pledge_purity"><option>22K</option><option>24K</option></select></div>
+                <button class="btn btn-warning" onclick="processGoldPledge()">APPRAISE & ENHANCE LIMIT</button>
             </div>
 
             <div class="form-row"><label id="lbl_cost">ASSET COST (INR)</label><input type="number" id="l_cost" oninput="calcEMI()"></div>
@@ -368,7 +393,7 @@
                 </div>
             </div>
 
-            <div style="margin-top:24px;">
+            <div style="margin-top:24px;" id="btn_disburse_main">
                 <button class="btn btn-success" onclick="sanctionAndDisburse()">AUTHORIZE & DISBURSE</button>
             </div>
         </div>
@@ -523,12 +548,56 @@
     </nav>
 </div>
 
+<div id="pdf-export-container">
+    <div class="sanction-letter" id="sanction-letter-template">
+        <div class="pdf-header">
+            <h1>NEST FINSERV LTD.</h1>
+            <p>RBI Reg NBFC: Digital Lending | CIN: U65100CT1985PLC002706</p>
+            <p>Corporate Office: 153, Karkari, Paschim Teliamura, Khowai Tripura 799205</p>
+        </div>
+        <div class="pdf-title">SANCTION LETTER</div>
+        
+        <div class="pdf-row"><strong>Date:</strong> <span id="pdf_date"></span></div>
+        <div class="pdf-row"><strong>Application No:</strong> <span id="pdf_app"></span></div>
+        <div class="pdf-row"><strong>Name:</strong> <span id="pdf_name"></span></div>
+        <div class="pdf-row"><strong>Address:</strong> <span id="pdf_add"></span></div>
+        <div class="pdf-row"><strong>Phone No:</strong> <span id="pdf_mob"></span></div>
+        <br>
+        <div class="pdf-row"><strong>Subject:</strong> <span id="pdf_sub"></span></div>
+        <br>
+        <p>Dear Sir/Madam,</p>
+        <p>We thank you for choosing Nest Finserv Limited as your financial partner. With reference to your loan application, we are pleased to offer you the loan as per the below mentioned terms and conditions:</p>
+        <br>
+        <p><strong>1. Particulars of Loan Sanctioned</strong></p>
+        <table class="pdf-table">
+            <tr><td>Loan Type</td><td id="pdf_t_type"></td></tr>
+            <tr><td>Sanction Amount (Total)</td><td id="pdf_t_amt"></td></tr>
+            <tr><td>Loan Tenor</td><td id="pdf_t_tenor"></td></tr>
+            <tr><td>Rate of Interest (APR)</td><td id="pdf_t_apr"></td></tr>
+            <tr><td>Monthly EMI</td><td id="pdf_t_emi"></td></tr>
+            <tr><td>Payment Mode</td><td>e-Mandate / NACH</td></tr>
+            <tr><td>Processing Fees</td><td id="pdf_t_pf"></td></tr>
+            <tr><td>Disbursement Amount</td><td id="pdf_t_disb"></td></tr>
+            <tr id="pdf_tr_imei" style="display:none;"><td>Asset IMEI/Serial</td><td id="pdf_t_imei"></td></tr>
+            <tr id="pdf_tr_bike" style="display:none;"><td>Engine & Chassis No.</td><td id="pdf_t_bike"></td></tr>
+        </table>
+        
+        <p style="font-size: 11px;">* Overdue charge includes Delayed Interest and Late Penalty as stipulated in the Master Loan Agreement.</p>
+        <p style="font-size: 11px;">* The company reserves the right to cancel the Application on valid grounds before the disbursement of Loan Amount.</p>
+        
+        <div class="pdf-footer">
+            <div class="pdf-signature-block">
+                Authorized Signatory<br>
+                Nest Finserv Ltd.
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     // --- STATE MANAGEMENT & AUTO-SAVE CORE ---
-    // DATA INTEGRITY SWEEPER: Instantly removes any corrupted nulls from previous crashes!
     let rawDB = JSON.parse(localStorage.getItem('nestFinservDB')) || [];
     let db = rawDB.filter(app => app !== null && typeof app === 'object' && app.appId); 
-    
     let currentAppId = localStorage.getItem('nestCurrentAppId') || null;
     let draftApp = JSON.parse(localStorage.getItem('nestDraftApp')) || {};
     let cibilRegistry = JSON.parse(localStorage.getItem('nestCibilRegistry')) || {}; 
@@ -723,36 +792,47 @@
             
             let cdFields = document.getElementById('asset_cd_fields');
             let bikeFields = document.getElementById('asset_bike_fields');
+            let glFields = document.getElementById('asset_gl_fields');
+            let dealerSec = document.getElementById('dealer_section');
+            
             if(cdFields) cdFields.classList.add('hidden'); 
             if(bikeFields) bikeFields.classList.add('hidden');
+            if(glFields) glFields.classList.add('hidden');
             
-            if(app.loanType === 'CD' || app.loanType === 'Bike') { 
+            if(app.loanType === 'CD' || app.loanType === 'Bike' || app.loanType === 'GL') { 
                 if(document.getElementById('ap_custId')) document.getElementById('ap_custId').innerText = app.customerId || '---'; 
                 if(document.getElementById('ap_appId')) document.getElementById('ap_appId').innerText = app.appId || '---'; 
                 
                 if(app.loanType === 'CD') {
                     if(document.getElementById('asset_header_title')) document.getElementById('asset_header_title').innerText = "Consumer Durable Details";
                     if(cdFields) cdFields.classList.remove('hidden');
+                    if(dealerSec) dealerSec.classList.remove('hidden');
+                    
                     let typeEl = document.getElementById('ap_cd_type');
                     if(typeEl) typeEl.value = app.p_type || 'Smartphone'; 
                     toggleProductFields();
-                    if(document.getElementById('ap_os')) document.getElementById('ap_os').value = app.p_os || 'Android';
-                    if(document.getElementById('ap_other_name')) document.getElementById('ap_other_name').value = app.p_other_name || ''; 
                     if(document.getElementById('ap_cd_name')) document.getElementById('ap_cd_name').value = app.p_name || ''; 
                     if(document.getElementById('ap_cd_imei1')) document.getElementById('ap_cd_imei1').value = app.imei1 || ''; 
                     if(document.getElementById('ap_cd_imei2')) document.getElementById('ap_cd_imei2').value = app.imei2 || '';
-                } else {
+                } else if(app.loanType === 'Bike') {
                     if(document.getElementById('asset_header_title')) document.getElementById('asset_header_title').innerText = "Two Wheeler Details";
                     if(bikeFields) bikeFields.classList.remove('hidden');
+                    if(dealerSec) dealerSec.classList.remove('hidden');
+
                     if(document.getElementById('ap_bike_name')) document.getElementById('ap_bike_name').value = app.p_name || ''; 
                     if(document.getElementById('ap_bike_engine')) document.getElementById('ap_bike_engine').value = app.engineNo || ''; 
                     if(document.getElementById('ap_bike_chassis')) document.getElementById('ap_bike_chassis').value = app.chassisNo || '';
+                } else if(app.loanType === 'GL') {
+                    if(document.getElementById('asset_header_title')) document.getElementById('asset_header_title').innerText = "Gold Inventory Appraisal";
+                    if(glFields) glFields.classList.remove('hidden');
+                    if(dealerSec) dealerSec.classList.add('hidden'); // GL ignores regular dealer checks
                 }
 
-                if(document.getElementById('ap_dealerId')) document.getElementById('ap_dealerId').value = app.p_dealerId || ''; 
-                if(document.getElementById('dealer-result')) document.getElementById('dealer-result').innerText = app.dealerVerified ? `[ VERIFIED ] ${app.dealerName}` : '';
-                if(document.getElementById('ap_sku')) document.getElementById('ap_sku').value = app.p_sku || '';
-                if(document.getElementById('ap_value')) document.getElementById('ap_value').value = app.prodValue || '';
+                if(app.loanType !== 'GL') {
+                    if(document.getElementById('ap_dealerId')) document.getElementById('ap_dealerId').value = app.p_dealerId || ''; 
+                    if(document.getElementById('dealer-result')) document.getElementById('dealer-result').innerText = app.dealerVerified ? `[ VERIFIED ] ${app.dealerName}` : '';
+                    if(document.getElementById('ap_value')) document.getElementById('ap_value').value = app.prodValue || '';
+                }
                 
                 let viewAsset = document.getElementById('view-asset-product');
                 if (viewAsset) viewAsset.classList.add('active');
@@ -797,8 +877,17 @@
     async function submitAssetToUnderwriting() {
         const app = getApp(); 
         if(!app) return uiAlert("Data error. Cannot submit.", "SYSTEM ERROR");
-        if(!app.dealerVerified) return uiAlert("Dealer ID must be verified.", "COMPLIANCE ERROR");
-        app.prodValue = parseFloat(document.getElementById('ap_value').value); if(!app.prodValue) return uiAlert("Invoice value missing.", "VALIDATION ERROR");
+
+        if (app.loanType === 'GL') {
+            app.gl_weight = parseFloat(document.getElementById('ap_gl_net').value);
+            if(!app.gl_weight) return uiAlert("Net Gold Weight is required for appraisal.", "APPRAISAL ERROR");
+            app.prodValue = Math.floor(app.gl_weight * 7100); 
+            app.dealerVerified = true; 
+        } else {
+            if(!app.dealerVerified) return uiAlert("Dealer ID must be verified.", "COMPLIANCE ERROR");
+            app.prodValue = parseFloat(document.getElementById('ap_value').value); 
+            if(!app.prodValue) return uiAlert("Invoice value missing.", "VALIDATION ERROR");
+        }
         
         if (app.loanType === 'CD') {
             app.p_name = document.getElementById('ap_cd_name').value;
@@ -817,6 +906,7 @@
         if(app) { app.plPurpose = document.getElementById('pl_purpose').value; saveDB(); await executeAutomatedPolicyEngine(); }
     }
 
+    // --- ENHANCED LIMIT & AGE ALGORITHMS ---
     async function executeAutomatedPolicyEngine() {
         await showSysLoader("EVALUATING MULTI-FACTOR RISK PROFILE...", 2500);
         const app = getApp();
@@ -831,24 +921,51 @@
             localStorage.setItem('nestCibilRegistry', JSON.stringify(cibilRegistry));
         }
 
-        let code, status, reason = "", dpP = 0, apr = 0;
+        let code = 'XX', status = 'PENDING', reason = "", dpP = 0, apr = 0;
         const age = (new Date() - new Date(app.dob)) / (1000 * 60 * 60 * 24 * 365.25);
+        
+        // Strict Minimum Age Reject
+        if (age < 18) {
+            status = 'REJECTED'; reason = "Policy Decline: Applicant Under 18";
+        }
+
+        // 18-21 Co-Applicant Mandate
+        let requiresCoApp = (age >= 18 && age < 21);
+        app.requiresCoApp = requiresCoApp;
+
+        // Base Limit Calculation (if not rejected by age)
         let baseMult = 0;
+        if (status !== 'REJECTED') {
+            if (cibil < 400) { code = 'XX'; status = 'REJECTED'; reason = `SEVERE DEROGATORY (${cibil})`; }
+            else if (cibil <= 600) { code = 'VR'; status = 'REJECTED'; reason = `BUREAU DECLINE: Score (${cibil})`; }
+            else if (cibil <= 649) { code = 'GR'; status = 'REJECTED_GR'; reason = `SUB-PRIME HIGH RISK (${cibil})`; baseMult = 0.2; }
+            else if (cibil <= 699) { code = 'GR'; status = 'REJECTED_GR'; reason = `SUB-PRIME (${cibil}) - Structuring Req.`; baseMult = 0.5; }
+            else if (cibil <= 729) { code = 'AR'; status = 'APPROVED'; dpP = 40; apr = 18; baseMult = 2.5; }
+            else if (cibil <= 749) { code = 'MR'; status = 'APPROVED'; dpP = 30; apr = 16; baseMult = 4.0; }
+            else if (cibil <= 760) { code = 'LR'; status = 'APPROVED'; dpP = 20; apr = 12; baseMult = 6.0; }
+            else { code = 'FR'; status = 'APPROVED'; dpP = 0; apr = 8; baseMult = 8.0; }
+        }
 
-        if (cibil < 400) { code = 'XX'; status = 'REJECTED'; reason = `SEVERE DEROGATORY (${cibil})`; baseMult = 0; }
-        else if (cibil <= 600) { code = 'VR'; status = 'REJECTED'; reason = `BUREAU DECLINE: Score (${cibil})`; baseMult = 0; }
-        else if (cibil <= 649) { code = 'GR'; status = 'REJECTED_GR'; reason = `SUB-PRIME HIGH RISK (${cibil})`; baseMult = 0.2; }
-        else if (cibil <= 699) { code = 'GR'; status = 'REJECTED_GR'; reason = `SUB-PRIME (${cibil}) - Structuring Req.`; baseMult = 0.5; }
-        else if (cibil <= 729) { code = 'AR'; status = 'APPROVED'; dpP = 40; apr = 18; baseMult = 2.5; }
-        else if (cibil <= 749) { code = 'MR'; status = 'APPROVED'; dpP = 30; apr = 16; baseMult = 4.0; }
-        else if (cibil <= 760) { code = 'LR'; status = 'APPROVED'; dpP = 20; apr = 12; baseMult = 6.0; }
-        else { code = 'FR'; status = 'APPROVED'; dpP = 0; apr = 8; baseMult = 8.0; }
+        // Apply Enhancements
+        let occMult = (app.occ === 'Salaried') ? 3.0 : (app.occ === 'Student' ? 0.3 : 1.0);
+        let assetMult = (app.loanType === 'Bike') ? 2.5 : 1.0; 
+        
+        // Progressive Age Limit Enhancer (Scale up to 60)
+        let ageMult = 1.0;
+        if (age > 21 && age <= 60) {
+            ageMult = 1.0 + ((age - 21) * 0.04); 
+        } else if (age > 60) {
+            ageMult = 0.5; 
+        }
 
-        if (app.occ === 'Salaried' && cibil >= 650) { baseMult += 2.0; } 
-        else if (app.occ === 'Student') { baseMult = Math.min(baseMult, 0.3); }
-        if ((age < 21 || age > 58) && baseMult > 0) { baseMult *= 0.7; }
+        let maxEligible = 0;
+        if (app.loanType === 'GL' && status !== 'REJECTED') {
+            maxEligible = Math.floor((app.gl_weight || 0) * 5325); // Gold skips Income constraint
+            code = 'GL-SECURED'; status = 'APPROVED'; dpP = 0; apr = 14; 
+        } else {
+            maxEligible = Math.floor((app.income * baseMult * occMult * ageMult * assetMult) / 1000) * 1000;
+        }
 
-        let maxEligible = Math.floor((app.income * baseMult) / 1000) * 1000;
         app.maxEligible = maxEligible; app.cibil = cibil; app.tier = code;
 
         if (status === 'REJECTED') {
@@ -858,7 +975,7 @@
         } 
         else if (status === 'REJECTED_GR') {
             app.status = 'REJECTED'; app.rejectReason = reason; saveDB();
-            const remarks = await uiPromptRemarks(`<b>System Flag:</b> ${reason}.<br><br>Max Eligible Limit based on income profile is strictly <b>₹${maxEligible.toLocaleString()}</b>.<br><br>Do you wish to force override?`);
+            const remarks = await uiPromptRemarks(`<b>System Flag:</b> ${reason}.<br><br>Max Eligible Limit is strictly <b>₹${maxEligible.toLocaleString()}</b>.<br><br>Do you wish to force override?`);
             if(remarks) { app.overrideLog = remarks; openStructuring(app, 50, 27, true); } 
             else nav('view-exceptions', document.querySelectorAll('.nav-item')[2]);
         } 
@@ -872,17 +989,34 @@
     function openStructuring(app, defDpPercent, defApr, isForce = false) {
         if(!app) return;
         app.status = 'APPROVED_STRUCTURING';
-        document.getElementById('l_cibil').innerText = app.cibil + (app.hasCoApp ? ' (+CO)' : ''); 
+        document.getElementById('l_cibil').innerText = app.cibil + (app.hasCoApp ? ' (+CO)' : '') + (app.hasGold ? ' (+GL)' : ''); 
         document.getElementById('l_tier').innerText = app.tier;
         
         let reqAmt = app.loanType === 'PL' ? app.plAmountReq : app.prodValue;
         document.getElementById('disp_req_amt').innerText = `₹${parseFloat(reqAmt || 0).toLocaleString()}`;
         document.getElementById('disp_max_limit').innerText = `₹${parseFloat(app.maxEligible || 0).toLocaleString()}`;
 
-        if (reqAmt > app.maxEligible && !app.hasCoApp) { document.getElementById('btn_add_coapp').classList.remove('hidden'); } 
-        else { document.getElementById('btn_add_coapp').classList.add('hidden'); }
-
-        const dpField = document.getElementById('l_dp'); const aprField = document.getElementById('l_apr');
+        // CO-APPLICANT AND POLICY COMPLIANCE
+        let complianceMsg = "";
+        let disburseBtn = document.getElementById('btn_disburse_main');
+        
+        if (app.requiresCoApp && !app.hasCoApp) {
+            document.getElementById('btn_add_coapp').classList.remove('hidden');
+            if(disburseBtn) disburseBtn.classList.add('hidden'); // Lock Disbursal
+            complianceMsg = "<div style='background:#FEE2E2; color:#B91C1C; padding:10px; border-radius:4px; font-size:0.75rem; margin-bottom:16px;'><b style='text-transform:uppercase;'>System Lock:</b> Applicant is under 21. A Co-Applicant is MANDATORY to proceed.</div>";
+        } else {
+            if(disburseBtn) disburseBtn.classList.remove('hidden'); // Unlock Disbursal
+            
+            // Allow enhancement if limit is short of requested
+            if (reqAmt > app.maxEligible) {
+                if(!app.hasCoApp) document.getElementById('btn_add_coapp').classList.remove('hidden');
+                if(!app.hasGold) document.getElementById('btn_add_gold').classList.remove('hidden');
+            } else {
+                document.getElementById('btn_add_coapp').classList.add('hidden');
+                document.getElementById('btn_add_gold').classList.add('hidden');
+            }
+        }
+        document.getElementById('structuring_compliance_banner').innerHTML = complianceMsg;
         document.getElementById('btn_req_exception').classList.remove('hidden');
 
         document.getElementById('l_start').value = app.l_start || ''; 
@@ -898,26 +1032,28 @@
             document.getElementById('l_cost').value = Math.min(app.plAmountReq, app.maxEligible);
             document.getElementById('sec_dp').classList.add('hidden'); 
             document.getElementById('lbl_disb').innerText = "Cust. Bank Disbursement";
-            dpField.value = 0; aprField.value = defApr;
+            document.getElementById('l_dp').value = 0; document.getElementById('l_apr').value = defApr;
         } else {
             document.getElementById('lbl_cost').innerText = "ASSET COST (INR)";
             document.getElementById('l_cost').value = app.prodValue || 0;
             document.getElementById('sec_dp').classList.remove('hidden');
-            document.getElementById('lbl_disb').innerText = "Dealer Disbursement";
+            document.getElementById('lbl_disb').innerText = app.loanType === 'GL' ? "Cust. Bank Disbursement" : "Dealer Disbursement";
+            
             let policyLoan = app.prodValue * (1 - (defDpPercent / 100));
             let actualLoan = Math.min(policyLoan, app.maxEligible);
             let requiredDp = app.prodValue - actualLoan;
-            dpField.value = Math.max(requiredDp, 0).toFixed(0); aprField.value = defApr;
+            document.getElementById('l_dp').value = Math.max(requiredDp, 0).toFixed(0); document.getElementById('l_apr').value = defApr;
         }
 
-        if(isForce) { app.forceUnderwritten = true; dpField.readOnly = true; aprField.readOnly = true; document.getElementById('l_cost').readOnly = true; } 
-        else { app.forceUnderwritten = false; dpField.readOnly = false; aprField.readOnly = false; document.getElementById('l_cost').readOnly = false; }
+        if(isForce) { app.forceUnderwritten = true; document.getElementById('l_dp').readOnly = true; document.getElementById('l_apr').readOnly = true; document.getElementById('l_cost').readOnly = true; } 
+        else { app.forceUnderwritten = false; document.getElementById('l_dp').readOnly = false; document.getElementById('l_apr').readOnly = false; document.getElementById('l_cost').readOnly = false; }
 
         saveDB(); calcEMI();
         document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active')); document.getElementById('view-structure').classList.add('active'); window.scrollTo(0, 0);
     }
 
     function showCoAppForm() { document.getElementById('co_app_form').classList.remove('hidden'); document.getElementById('btn_add_coapp').classList.add('hidden'); }
+    function showGoldPledgeForm() { document.getElementById('gold_pledge_form').classList.remove('hidden'); document.getElementById('btn_add_gold').classList.add('hidden'); }
 
     async function processCoApplicant() {
         const pan = document.getElementById('co_pan').value.toUpperCase();
@@ -949,8 +1085,27 @@
         if(app) { app.maxEligible = (app.maxEligible || 0) + extraLimit; app.hasCoApp = true; app.coAppDetails = { pan, cibil, extraLimit }; saveDB(); }
         await uiAlert(`Co-Applicant Approved!<br>CIBIL: ${cibil}<br>Additional Limit: ₹${extraLimit.toLocaleString()}`, "LIMIT ENHANCED");
         
+        // FORM RESET
+        document.getElementById('co_name').value = ''; document.getElementById('co_pan').value = ''; document.getElementById('co_income').value = '';
         document.getElementById('co_app_form').classList.add('hidden');
         openStructuring(app, app.loanType==='PL'?0:20, 16, app?app.forceUnderwritten:false); 
+    }
+
+    async function processGoldPledge() {
+        const w = parseFloat(document.getElementById('gl_pledge_weight').value);
+        if(!w || w <= 0) return uiAlert("Enter a valid net weight.");
+        
+        await showSysLoader("APPRAISING INVENTORY...", 1500);
+        const extraLimit = Math.floor(w * 5325); // Current standard LTV algorithm
+        
+        const app = getApp();
+        if(app) { app.maxEligible = (app.maxEligible || 0) + extraLimit; app.hasGold = true; saveDB(); }
+        
+        document.getElementById('gl_pledge_weight').value = ''; 
+        document.getElementById('gold_pledge_form').classList.add('hidden');
+        
+        await uiAlert(`Gold Collateral Verified!<br>Additional Limit Attached: ₹${extraLimit.toLocaleString()}`, "COLLATERAL ENHANCED");
+        openStructuring(app, app.loanType==='PL'?0:20, 16, app?app.forceUnderwritten:false);
     }
 
     async function requestLimitException() {
@@ -1003,13 +1158,20 @@
     async function sanctionAndDisburse() {
         const app = getApp();
         if(!document.getElementById('b_mandate').value || !document.getElementById('b_acc').value) return uiAlert("Bank Details missing.", "COMPLIANCE ERROR");
+        
         await showSysLoader("AUTHORIZING DISBURSEMENT...", 2000);
         if(app) { app.status = 'ACTIVE'; app.loanId = genId('LN'); saveDB(); }
         
-        const disburseTarget = app && app.loanType === 'PL' ? 'Customer Bank Account' : 'Dealer Account';
+        const disburseTarget = (app && (app.loanType === 'PL' || app.loanType === 'GL')) ? 'Customer Bank Account' : 'Dealer Account';
         await uiAlert(`TRANSACTION COMPLETE.<br><br>Funds successfully scheduled for disbursement to ${disburseTarget}.<br><br>Loan A/C: <b>${app ? app.loanId : ''}</b>`, "DISBURSEMENT AUTHORIZED");
         
-        if(app) generateSanctionLetter(app);
+        // SAFE PDF GENERATION WRAPPER - Prevents Crashing / Refreshing
+        try {
+            if(app) generateSanctionLetter(app);
+        } catch (error) {
+            console.error("PDF Generation Failed, but flow is secure: ", error);
+        }
+        
         setAppIdContext(null); nav('view-portfolio', document.querySelectorAll('.nav-item')[3]);
     }
 
@@ -1017,7 +1179,7 @@
         document.getElementById('pdf_date').innerText = new Date().toLocaleDateString(); document.getElementById('pdf_app').innerText = app.appId || '';
         document.getElementById('pdf_name').innerText = `${app.fname || ''} ${app.lname || ''}`.toUpperCase(); document.getElementById('pdf_add').innerText = app.address || ''; document.getElementById('pdf_mob').innerText = app.mobile || '';
         document.getElementById('pdf_sub').innerText = `Application for ${app.loanType === 'PL' ? 'Personal Loan' : (app.loanType === 'Bike' ? 'Two Wheeler Loan' : 'Consumer Durable Loan')}`;
-        document.getElementById('pdf_t_type').innerText = app.loanType === 'PL' ? 'Personal Loan' : (app.loanType === 'Bike' ? 'Two Wheeler Loan' : 'Consumer Durable');
+        document.getElementById('pdf_t_type').innerText = app.loanType === 'PL' ? 'Personal Loan' : (app.loanType === 'Bike' ? 'Two Wheeler Loan' : (app.loanType === 'GL' ? 'Gold Loan' : 'Consumer Durable'));
         
         let p_prin = app.loanDetails && app.loanDetails.principal ? app.loanDetails.principal : 0;
         let p_emi = app.loanDetails && app.loanDetails.emi ? app.loanDetails.emi : 0;
@@ -1040,7 +1202,7 @@
         html2pdf().set({ margin: 10, filename: `Sanction_Letter_${app.appId}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(element).save();
     }
 
-    // --- BULLETPROOF EXCEPTION RENDERING ---
+    // --- EXCEPTION RENDERING ---
     function renderExceptions() {
         const cont = document.getElementById('exception-list'); 
         if(!cont) return;
@@ -1090,7 +1252,7 @@
         if(remarks) { setAppIdContext(id); const app = getApp(); if(app) { app.overrideLog = remarks; await showSysLoader("OVERRIDING...", 1000); openStructuring(app, 60, 33, true); } }
     }
 
-    // --- BULLETPROOF PORTFOLIO RENDERING ---
+    // --- PORTFOLIO RENDERING ---
     function renderPortfolio() {
         const cont = document.getElementById('portfolio-list'); 
         if(!cont) return;
