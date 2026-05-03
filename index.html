@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nest Finserv | DSA Core Module v9.0</title>
+    <title>Nest Finserv | DSA Core Module v8.3</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         /* Enterprise Fintech Theme */
@@ -433,7 +433,7 @@
                         <option value="LLP">LLP</option>
                     </select>
                 </div>
-                <div class="form-row"><label>Legal Owner Name(s)</label><input type="text" id="d_owner" placeholder="e.g. Amrit Das" required></div>
+                <div class="form-row"><label>Legal Owner Name(s)</label><input type="text" id="d_owner" placeholder="e.g. Angajit Sarkar" required></div>
                 <div class="form-row"><label>Mobile Number</label><input type="tel" id="d_mobile" maxlength="10" required></div>
                 <div class="form-row"><label>Email Address</label><input type="email" id="d_email" required></div>
                 <div class="form-row"><label>Dealership Full Address</label><textarea id="d_address" rows="2" required></textarea></div>
@@ -802,9 +802,14 @@
     function toggleLoanTypeFields() { 
         let val = document.getElementById('c_loan_type').value;
         let field = document.getElementById('pl_amount_field');
+        let lbl = document.getElementById('lbl_req_amt');
         if(field) {
             if (val === 'PL') {
                 field.classList.remove('hidden');
+                if(lbl) lbl.innerText = "Requested Loan Amount (₹)";
+            } else if (val === 'GL') {
+                field.classList.remove('hidden');
+                if(lbl) lbl.innerText = "Requested Gold Advance (₹)";
             } else {
                 field.classList.add('hidden');
             }
@@ -820,7 +825,7 @@
         try {
             const type = document.getElementById('c_loan_type').value;
             const plAmt = document.getElementById('c_pl_amount').value;
-            if (type === 'PL' && !plAmt) return uiAlert("Requested Loan Amount missing.", "INPUT ERROR");
+            if ((type === 'PL' || type === 'GL') && !plAmt) return uiAlert("Requested Amount missing.", "INPUT ERROR");
 
             const app = {
                 appId: genId('APP'), loanType: type, plAmountReq: plAmt || null,
@@ -1100,11 +1105,10 @@
         document.getElementById('l_tier').innerText = app.tier;
         
         let reqAmt;
-        if(app.loanType === 'PL') reqAmt = app.plAmountReq;
-        else if (app.loanType === 'GL') reqAmt = app.maxEligible; 
+        if(app.loanType === 'PL' || app.loanType === 'GL') reqAmt = app.plAmountReq;
         else reqAmt = app.prodValue;
 
-        document.getElementById('lbl_req_disp').innerText = app.loanType === 'GL' ? "Appraised Gold Value" : "Requested Amount";
+        document.getElementById('lbl_req_disp').innerText = app.loanType === 'GL' ? "Requested Gold Advance" : "Requested Amount";
         document.getElementById('disp_req_amt').innerText = `₹${parseFloat(reqAmt || 0).toLocaleString()}`;
         document.getElementById('disp_max_limit').innerText = `₹${parseFloat(app.maxEligible || 0).toLocaleString()}`;
 
