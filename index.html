@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nest Finserv | DSA Core Module v8.3</title>
+    <title>Nest Finserv | DSA Core Module v9.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         /* Enterprise Fintech Theme */
@@ -642,8 +642,7 @@
 </div>
 
 <script>
-    // --- AGGRESSIVE DATA INTEGRITY SWEEPER (PREVENTS BLANK SCREENS) ---
-    // If the browser data is corrupted from older tests, this completely strips out the bad files safely.
+    // --- AGGRESSIVE DATA INTEGRITY SWEEPER ---
     let db = [];
     try {
         let rawData = localStorage.getItem('nestFinservDB');
@@ -666,7 +665,6 @@
     let cibilRegistry = {};
     try { cibilRegistry = JSON.parse(localStorage.getItem('nestCibilRegistry')) || {}; } catch(e) {}
     
-    // Custom Dynamic Dealer Registry
     let customDealers = {};
     try { customDealers = JSON.parse(localStorage.getItem('nestCustomDealers')) || {}; } catch(e) {}
     const BASE_DEALERS = { "DT21011721": "Maa Electronics", "DT21011722": "A to Z Mobile", "DT21011723": "Shani Electronis", "DT21011724": "DEEP Mobiles", "DT210117": "Shankar Mobiles", "DT21011725": "Sengupta Motors", "DT21011726": "Chowdhury Tvs" };
@@ -744,7 +742,7 @@
         });
     }
 
-    // LIVE AGE CALCULATOR - SAFE VERSION
+    // LIVE AGE CALCULATOR
     function calcAge(dobStr) {
         let badge = document.getElementById('age_badge');
         if(!badge) return;
@@ -758,7 +756,7 @@
         } catch(e) { badge.innerText = ""; }
     }
 
-    // GLOBAL CRASH HANDLER ON LOAD
+    // SAFE LOAD HANDLER
     window.onload = () => { 
         try {
             if (currentAppId) setAppIdContext(currentAppId); 
@@ -937,7 +935,7 @@
                 } else if(app.loanType === 'GL') {
                     if(document.getElementById('asset_header_title')) document.getElementById('asset_header_title').innerText = "Gold Inventory Appraisal";
                     if(glFields) glFields.classList.remove('hidden');
-                    if(dealerSec) dealerSec.classList.add('hidden'); // GL ignores regular dealer checks
+                    if(dealerSec) dealerSec.classList.add('hidden'); 
                 }
 
                 if(app.loanType !== 'GL') {
