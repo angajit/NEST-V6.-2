@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nest Finserv | DSA Core Module v8.0</title>
+    <title>Nest Finserv | DSA Core Module v8.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         /* Enterprise Fintech Theme */
@@ -19,7 +19,7 @@
             --success: #059669;
             --danger: #DC2626;
             --warning: #D97706;
-            --gold: #D97706;
+            --gold: #B45309;
         }
 
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
@@ -32,7 +32,7 @@
         .sys-time { font-size: 0.75rem; color: #9CA3AF; font-weight: 500;}
 
         .nav-bar { position: fixed; bottom: 0; width: 100%; max-width: 500px; background: var(--surface); display: flex; border-top: 1px solid var(--border-light); z-index: 100; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;}
-        .nav-item { flex: 1; padding: 12px 0; text-align: center; font-size: 0.6rem; color: var(--text-muted); cursor: pointer; text-transform: uppercase; font-weight: 700; transition: 0.2s; letter-spacing: 0px;}
+        .nav-item { flex: 1; padding: 14px 0; text-align: center; font-size: 0.6rem; color: var(--text-muted); cursor: pointer; text-transform: uppercase; font-weight: 700; transition: 0.2s; letter-spacing: 0px;}
         .nav-item.active { color: var(--brand-primary); border-bottom: 3px solid var(--brand-primary); background: #F9FAFB; color: var(--brand-dark);}
 
         .view-container { display: none; padding: 16px; animation: fadeIn 0.2s ease; }
@@ -55,12 +55,6 @@
         .btn-outline { background: transparent; border: 1px solid var(--border-focus); color: var(--text-main); }
         .btn-danger { background: var(--danger); color: white; }
         .btn-warning { background: var(--warning); color: white; }
-
-        /* Facility Grid Buttons */
-        .facility-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
-        .fac-btn { padding: 12px; border: 1px solid var(--border-light); border-radius: 4px; text-align: center; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; cursor: pointer; transition: 0.2s; background: #FFF; color: var(--text-muted); }
-        .fac-btn.active { border-color: var(--brand-primary); background: #F0FDF4; color: var(--brand-primary); box-shadow: inset 0 0 0 1px var(--brand-primary);}
-        .fac-btn.active-gold { border-color: var(--gold); background: #FFFBEB; color: #B45309; box-shadow: inset 0 0 0 1px var(--gold);}
 
         .hidden { display: none !important; }
         .flex-row { display: flex; gap: 8px; align-items: center; }
@@ -158,13 +152,12 @@
                 
                 <div class="form-row">
                     <label>Facility Type</label>
-                    <div class="facility-grid">
-                        <div class="fac-btn active" id="fac_CD" onclick="setFacility('CD')">📱 Appliance</div>
-                        <div class="fac-btn" id="fac_Bike" onclick="setFacility('Bike')">🏍️ Two Wheeler</div>
-                        <div class="fac-btn" id="fac_PL" onclick="setFacility('PL')">💸 Personal Loan</div>
-                        <div class="fac-btn" id="fac_GL" onclick="setFacility('GL')" style="border-width: 2px;">🏅 Gold Loan</div>
-                    </div>
-                    <input type="hidden" id="c_loan_type" value="CD">
+                    <select id="c_loan_type" onchange="toggleLoanTypeFields()" required>
+                        <option value="CD">Consumer Durable (Appliance/Mobile)</option>
+                        <option value="Bike">Two Wheeler Finance</option>
+                        <option value="PL">Personal Loan</option>
+                        <option value="GL" style="font-weight:bold; color:var(--gold);">Gold Loan (Inventory Pledge)</option>
+                    </select>
                 </div>
 
                 <div class="form-row"><label>First Name</label><input type="text" id="c_fname" required></div>
@@ -172,7 +165,7 @@
                 <div class="form-row"><label>Mobile Number</label><input type="tel" id="c_mobile" maxlength="10" required></div>
                 
                 <div class="form-row">
-                    <label>Date of Birth <span id="age_badge" style="color:var(--brand-primary); float:right;"></span></label>
+                    <label>Date of Birth <span id="age_badge" style="color:var(--brand-primary); float:right; font-weight:800; font-size:0.85rem;"></span></label>
                     <input type="date" id="c_dob" oninput="calcAge(this.value)" required>
                 </div>
                 
@@ -349,7 +342,7 @@
 
             <div style="background: #F9FAFB; border: 1px solid var(--border-light); padding: 16px; border-radius: 4px; margin-bottom: 20px;">
                 <div class="flex-row" style="justify-content: space-between; margin-bottom: 8px;">
-                    <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Requested Amount</span>
+                    <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;" id="lbl_req_disp">Requested Amount</span>
                     <strong id="disp_req_amt" style="font-size:1rem; color:var(--text-main);">₹0</strong>
                 </div>
                 <div class="flex-row" style="justify-content: space-between;">
@@ -380,6 +373,7 @@
 
             <div class="form-row"><label id="lbl_cost">ASSET COST (INR)</label><input type="number" id="l_cost" oninput="calcEMI()"></div>
             <div id="sec_dp" class="form-row"><label>Downpayment (INR)</label><input type="number" id="l_dp" oninput="calcEMI()"></div>
+            
             <div class="form-row"><label>Interest Rate (% APR)</label><input type="number" id="l_apr" oninput="calcEMI()"></div>
             <div class="form-row"><label>Tenure (Months)</label><input type="number" id="l_tenure" value="12" oninput="calcEMI()"></div>
             
@@ -647,8 +641,16 @@
 </div>
 
 <script>
-    // --- STATE MANAGEMENT & AUTO-SAVE CORE ---
-    let rawDB = JSON.parse(localStorage.getItem('nestFinservDB')) || [];
+    // --- AGGRESSIVE DATA INTEGRITY SWEEPER (PREVENTS BLANK SCREENS) ---
+    let rawData = localStorage.getItem('nestFinservDB');
+    let rawDB = [];
+    try {
+        rawDB = JSON.parse(rawData);
+        if (!Array.isArray(rawDB)) rawDB = []; // Force array if corrupted to object/string
+    } catch(e) {
+        rawDB = []; // Total wipe if JSON is completely broken
+    }
+    
     let db = rawDB.filter(app => app !== null && typeof app === 'object' && app.appId); 
     let currentAppId = localStorage.getItem('nestCurrentAppId') || null;
     let draftApp = JSON.parse(localStorage.getItem('nestDraftApp')) || {};
@@ -731,6 +733,20 @@
         });
     }
 
+    // LIVE AGE CALCULATOR
+    function calcAge(dobStr) {
+        let badge = document.getElementById('age_badge');
+        if(!badge) return;
+        if(!dobStr) { badge.innerText = ""; return; }
+        try {
+            let dob = new Date(dobStr);
+            let ageDate = new Date(Date.now() - dob.getTime());
+            let age = Math.abs(ageDate.getUTCFullYear() - 1970);
+            if(!isNaN(age)) badge.innerText = `(${age} Years)`;
+            else badge.innerText = "";
+        } catch(e) { badge.innerText = ""; }
+    }
+
     window.onload = () => { 
         if (currentAppId) setAppIdContext(currentAppId); 
         document.querySelectorAll('#form-create input, #form-create select').forEach(el => {
@@ -741,16 +757,6 @@
         });
         toggleLoanTypeFields();
     };
-
-    // Live Age Calculator
-    function calcAge(dobStr) {
-        let badge = document.getElementById('age_badge');
-        if(!dobStr) { badge.innerText = ""; return; }
-        let dob = new Date(dobStr);
-        let ageDate = new Date(Date.now() - dob.getTime());
-        let age = Math.abs(ageDate.getUTCFullYear() - 1970);
-        badge.innerText = `(${age} Years)`;
-    }
 
     async function nav(viewId, navBtn = null) {
         try {
@@ -775,24 +781,9 @@
         }
     }
 
-    function setFacility(type) {
-        document.getElementById('c_loan_type').value = type;
-        document.querySelectorAll('.fac-btn').forEach(b => {
-            b.classList.remove('active');
-            b.classList.remove('active-gold');
-        });
-        if(type === 'GL') {
-            document.getElementById('fac_GL').classList.add('active-gold');
-        } else {
-            document.getElementById('fac_'+type).classList.add('active');
-        }
-        toggleLoanTypeFields();
-    }
-
     function toggleLoanTypeFields() { 
         let val = document.getElementById('c_loan_type').value;
         let field = document.getElementById('pl_amount_field');
-        // Strictly hidden for GL and CD/Bike
         if(field) {
             if (val === 'PL') {
                 field.classList.remove('hidden');
@@ -828,7 +819,8 @@
             document.getElementById('form-create').reset();
             document.querySelectorAll('#form-create input').forEach(i => i.value = ''); 
             document.getElementById('age_badge').innerText = '';
-            setFacility('CD'); 
+            document.getElementById('c_loan_type').value = 'CD';
+            toggleLoanTypeFields();
             toggleSalariedFields();
             
             await uiAlert(`Application recorded successfully.<br><br>System ID: <b>${app.appId}</b>`, "OPERATION SUCCESSFUL");
@@ -1096,9 +1088,10 @@
         
         let reqAmt;
         if(app.loanType === 'PL') reqAmt = app.plAmountReq;
-        else if (app.loanType === 'GL') reqAmt = app.maxEligible; // GL defaults request to Assessed value
+        else if (app.loanType === 'GL') reqAmt = app.maxEligible; // GL strictly defaults request to Assessed value
         else reqAmt = app.prodValue;
 
+        document.getElementById('lbl_req_disp').innerText = app.loanType === 'GL' ? "Appraised Gold Value" : "Requested Amount";
         document.getElementById('disp_req_amt').innerText = `₹${parseFloat(reqAmt || 0).toLocaleString()}`;
         document.getElementById('disp_max_limit').innerText = `₹${parseFloat(app.maxEligible || 0).toLocaleString()}`;
 
@@ -1534,31 +1527,4 @@
         if(!app) return;
         app.mobile = document.getElementById('e_mobile').value; app.address = document.getElementById('e_address').value;
         app.bankName = document.getElementById('e_b_name').value; app.bankAcc = document.getElementById('e_b_acc').value; app.bankIfsc = document.getElementById('e_b_ifsc').value;
-        if (app.loanType === 'CD') { app.p_name = document.getElementById('e_cd_name').value; app.imei1 = document.getElementById('e_cd_imei1').value; app.imei2 = document.getElementById('e_cd_imei2').value; app.dealerName = document.getElementById('e_cd_dealer').value; } 
-        else if (app.loanType === 'Bike') { app.p_name = document.getElementById('e_bike_name').value; app.engineNo = document.getElementById('e_bike_engine').value; app.chassisNo = document.getElementById('e_bike_chassis').value; app.dealerName = document.getElementById('e_bike_dealer').value; }
-        else { app.plPurpose = document.getElementById('e_pl_purpose').value; }
-        saveDB(); await uiAlert("Ledger updated successfully.", "SYSTEM LOG"); nav('view-portfolio', document.querySelectorAll('.nav-item')[3]);
-    }
-
-    async function performSearch() {
-        const q = document.getElementById('search_query').value.toUpperCase().trim(); 
-        const res = document.getElementById('search-results'); 
-        if(!res) return;
-        res.innerHTML = ''; 
-        if(!q) return;
-        
-        await showSysLoader("EXECUTING QUERY...", 600);
-        const found = db.filter(a => ((a.appId && a.appId.includes(q)) || (a.loanId && a.loanId.includes(q)) || (a.fname && a.fname.toUpperCase().includes(q))));
-        if(!found.length) {
-            res.innerHTML = '<div class="panel">0 Records Found.</div>';
-            return;
-        }
-        
-        found.forEach(app => {
-            res.innerHTML += `<div class="panel"><div style="display:flex; justify-content:space-between; margin-bottom:8px;"><strong style="text-transform:uppercase;">${app.fname || ''} ${app.lname || ''}</strong><span class="badge ${app.status==='ACTIVE'?'badge-success':(app.status && app.status.includes('REJECTED')?'badge-danger':'badge-pending')}">${(app.status || 'UNKNOWN').replace('_', ' ')}</span></div>
-            <div class="data-grid" style="margin-bottom:0;"><div><span>App ID</span><strong style="font-family:monospace;">${app.appId || 'N/A'}</strong></div>${app.loanId ? `<div><span>Loan ID</span><strong style="font-family:monospace;">${app.loanId}</strong></div>` : '<div></div>'}</div></div>`;
-        });
-    }
-</script>
-</body>
-</html>
+        if (app.loanType === 'CD') { app.p_name = document.getElementById('e_cd_name').value; app.imei1 = document.getElementById('e_cd_imei1').value; app.imei2 = document.getElementById('e_cd_imei2').value; app.dealerName = document.getElementById('e_cd_dealer').value
