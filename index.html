@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nest Finserv | DSA Core Module v8.1</title>
+    <title>Nest Finserv | DSA Core Module v8.2</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         /* Enterprise Fintech Theme */
@@ -164,9 +164,15 @@
                 <div class="form-row"><label>Last Name</label><input type="text" id="c_lname" required></div>
                 <div class="form-row"><label>Mobile Number</label><input type="tel" id="c_mobile" maxlength="10" required></div>
                 
-                <div class="form-row">
-                    <label>Date of Birth <span id="age_badge" style="color:var(--brand-primary); float:right; font-weight:800; font-size:0.85rem;"></span></label>
-                    <input type="date" id="c_dob" oninput="calcAge(this.value)" required>
+                <div class="data-grid" style="margin-bottom: 16px; background: transparent; padding: 0; border: none; gap: 8px;">
+                    <div>
+                        <label>Date of Birth</label>
+                        <input type="date" id="c_dob" oninput="calcAge(this.value)" required>
+                    </div>
+                    <div>
+                        <label>System Age</label>
+                        <input type="text" id="c_age" readonly placeholder="Auto-calculated">
+                    </div>
                 </div>
                 
                 <div class="form-row">
@@ -642,16 +648,23 @@
 
 <script>
     // --- AGGRESSIVE DATA INTEGRITY SWEEPER (PREVENTS BLANK SCREENS) ---
+    // If the browser data is corrupted, this completely strips out the bad files automatically.
     let rawData = localStorage.getItem('nestFinservDB');
     let rawDB = [];
     try {
         rawDB = JSON.parse(rawData);
-        if (!Array.isArray(rawDB)) rawDB = []; // Force array if corrupted to object/string
+        if (!Array.isArray(rawDB)) rawDB = []; 
     } catch(e) {
-        rawDB = []; // Total wipe if JSON is completely broken
+        rawDB = []; 
     }
     
-    let db = rawDB.filter(app => app !== null && typeof app === 'object' && app.appId); 
+    let db = rawDB.filter(app => {
+        if (!app || typeof app !== 'object') return false;
+        if (typeof app.appId !== 'string') return false;
+        if (typeof app.status !== 'string') return false;
+        return true;
+    }); 
+    
     let currentAppId = localStorage.getItem('nestCurrentAppId') || null;
     let draftApp = JSON.parse(localStorage.getItem('nestDraftApp')) || {};
     let cibilRegistry = JSON.parse(localStorage.getItem('nestCibilRegistry')) || {}; 
@@ -733,18 +746,18 @@
         });
     }
 
-    // LIVE AGE CALCULATOR
+    // FORMAL LIVE AGE CALCULATOR
     function calcAge(dobStr) {
-        let badge = document.getElementById('age_badge');
-        if(!badge) return;
-        if(!dobStr) { badge.innerText = ""; return; }
+        let ageField = document.getElementById('c_age');
+        if(!ageField) return;
+        if(!dobStr) { ageField.value = ""; return; }
         try {
             let dob = new Date(dobStr);
             let ageDate = new Date(Date.now() - dob.getTime());
             let age = Math.abs(ageDate.getUTCFullYear() - 1970);
-            if(!isNaN(age)) badge.innerText = `(${age} Years)`;
-            else badge.innerText = "";
-        } catch(e) { badge.innerText = ""; }
+            if(!isNaN(age)) ageField.value = age + " Years";
+            else ageField.value = "";
+        } catch(e) { ageField.value = ""; }
     }
 
     window.onload = () => { 
@@ -818,7 +831,7 @@
             draftApp = {}; localStorage.removeItem('nestDraftApp');
             document.getElementById('form-create').reset();
             document.querySelectorAll('#form-create input').forEach(i => i.value = ''); 
-            document.getElementById('age_badge').innerText = '';
+            document.getElementById('c_age').value = '';
             document.getElementById('c_loan_type').value = 'CD';
             toggleLoanTypeFields();
             toggleSalariedFields();
@@ -843,7 +856,7 @@
         }
         pending.forEach(app => {
             let statusClass = app.status === 'APPROVED_STRUCTURING' ? 'badge-pending' : 'badge-success';
-            let statusText = app.status === 'APPROVED_STRUCTURING' ? 'ACTION REQ' : app.status.replace('_',' ');
+            let statusText = app.status === 'APPROVED_STRUCTURING' ? 'ACTION REQ' : String(app.status).replace('_',' ');
             cont.innerHTML += `<div class="list-item" onclick="openPipelineRecord('${app.appId}')">
                 <div><span class="badge badge-type">${app.loanType || 'N/A'}</span><div style="font-weight:800;">${app.fname || ''} ${app.lname || ''}</div><div style="font-size:0.75rem; color:var(--text-muted); font-family:monospace; margin-top:2px;">${app.appId}</div></div>
                 <span class="badge ${app.status==='PENDING_KYC'?'badge-pending':statusClass}">${statusText}</span></div>`;
@@ -1180,7 +1193,6 @@
         if(app) { app.maxEligible = (app.maxEligible || 0) + extraLimit; app.hasCoApp = true; app.coAppDetails = { pan, cibil, extraLimit }; saveDB(); }
         await uiAlert(`Co-Applicant Approved!<br>CIBIL: ${cibil}<br>Additional Limit: ₹${extraLimit.toLocaleString()}`, "LIMIT ENHANCED");
         
-        // BUG FIX: Form fields are fully cleared from memory after success
         document.getElementById('co_name').value = ''; document.getElementById('co_pan').value = ''; document.getElementById('co_income').value = '';
         document.getElementById('co_app_form').classList.add('hidden');
         openStructuring(app, app.loanType==='PL'?0:20, 16, app?app.forceUnderwritten:false); 
@@ -1260,7 +1272,6 @@
         const disburseTarget = (app && (app.loanType === 'PL' || app.loanType === 'GL')) ? 'Customer Bank Account' : 'Dealer Account';
         await uiAlert(`TRANSACTION COMPLETE.<br><br>Funds successfully scheduled for disbursement to ${disburseTarget}.<br><br>Loan A/C: <b>${app ? app.loanId : ''}</b>`, "DISBURSEMENT AUTHORIZED");
         
-        // SAFE PDF GENERATOR
         try { if(app) generateSanctionLetter(app); } catch (e) { console.error("PDF Suppressed, flow secure.", e); }
         
         setAppIdContext(null); nav('view-portfolio', document.querySelectorAll('.nav-item')[3]);
@@ -1308,7 +1319,6 @@
         };
         localStorage.setItem('nestCustomDealers', JSON.stringify(customDealers));
         
-        // Reset form
         document.getElementById('d_name').value = '';
         document.getElementById('d_owner').value = '';
         document.getElementById('d_mobile').value = '';
@@ -1334,7 +1344,7 @@
         });
     }
 
-    // --- EXCEPTION RENDERING ---
+    // --- BULLETPROOF EXCEPTION RENDERING ---
     function renderExceptions() {
         const cont = document.getElementById('exception-list'); 
         if(!cont) return;
@@ -1384,7 +1394,7 @@
         if(remarks) { setAppIdContext(id); const app = getApp(); if(app) { app.overrideLog = remarks; await showSysLoader("OVERRIDING...", 1000); openStructuring(app, 60, 33, true); } }
     }
 
-    // --- PORTFOLIO RENDERING ---
+    // --- BULLETPROOF PORTFOLIO RENDERING ---
     function renderPortfolio() {
         const cont = document.getElementById('portfolio-list'); 
         if(!cont) return;
@@ -1527,4 +1537,32 @@
         if(!app) return;
         app.mobile = document.getElementById('e_mobile').value; app.address = document.getElementById('e_address').value;
         app.bankName = document.getElementById('e_b_name').value; app.bankAcc = document.getElementById('e_b_acc').value; app.bankIfsc = document.getElementById('e_b_ifsc').value;
-        if (app.loanType === 'CD') { app.p_name = document.getElementById('e_cd_name').value; app.imei1 = document.getElementById('e_cd_imei1').value; app.imei2 = document.getElementById('e_cd_imei2').value; app.dealerName = document.getElementById('e_cd_dealer').value
+        if (app.loanType === 'CD') { app.p_name = document.getElementById('e_cd_name').value; app.imei1 = document.getElementById('e_cd_imei1').value; app.imei2 = document.getElementById('e_cd_imei2').value; app.dealerName = document.getElementById('e_cd_dealer').value; } 
+        else if (app.loanType === 'Bike') { app.p_name = document.getElementById('e_bike_name').value; app.engineNo = document.getElementById('e_bike_engine').value; app.chassisNo = document.getElementById('e_bike_chassis').value; app.dealerName = document.getElementById('e_bike_dealer').value; }
+        else { app.plPurpose = document.getElementById('e_pl_purpose').value; }
+        saveDB(); await uiAlert("Ledger updated successfully.", "SYSTEM LOG"); nav('view-portfolio', document.querySelectorAll('.nav-item')[3]);
+    }
+
+    async function performSearch() {
+        const q = document.getElementById('search_query').value.toUpperCase().trim(); 
+        const res = document.getElementById('search-results'); 
+        if(!res) return;
+        res.innerHTML = ''; 
+        if(!q) return;
+        
+        await showSysLoader("EXECUTING QUERY...", 600);
+        const found = db.filter(a => ((a.appId && a.appId.includes(q)) || (a.loanId && a.loanId.includes(q)) || (a.fname && a.fname.toUpperCase().includes(q))));
+        if(!found.length) {
+            res.innerHTML = '<div class="panel">0 Records Found.</div>';
+            return;
+        }
+        
+        found.forEach(app => {
+            let safeStatus = app.status ? String(app.status) : 'UNKNOWN';
+            res.innerHTML += `<div class="panel"><div style="display:flex; justify-content:space-between; margin-bottom:8px;"><strong style="text-transform:uppercase;">${app.fname || ''} ${app.lname || ''}</strong><span class="badge ${safeStatus==='ACTIVE'?'badge-success':(safeStatus.includes('REJECTED')?'badge-danger':'badge-pending')}">${safeStatus.replace('_', ' ')}</span></div>
+            <div class="data-grid" style="margin-bottom:0;"><div><span>App ID</span><strong style="font-family:monospace;">${app.appId || 'N/A'}</strong></div>${app.loanId ? `<div><span>Loan ID</span><strong style="font-family:monospace;">${app.loanId}</strong></div>` : '<div></div>'}</div></div>`;
+        });
+    }
+</script>
+</body>
+</html>
