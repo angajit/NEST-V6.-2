@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nest Finserv | DSA Core Module v7.5</title>
+    <title>Nest Finserv | DSA Core Module v7.8</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         /* Enterprise Fintech Theme */
@@ -56,6 +56,12 @@
         .btn-danger { background: var(--danger); color: white; }
         .btn-warning { background: var(--warning); color: white; }
 
+        /* Facility Grid Buttons */
+        .facility-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+        .fac-btn { padding: 12px; border: 1px solid var(--border-light); border-radius: 4px; text-align: center; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; cursor: pointer; transition: 0.2s; background: #FFF; color: var(--text-muted); }
+        .fac-btn.active { border-color: var(--brand-primary); background: #F0FDF4; color: var(--brand-primary); box-shadow: inset 0 0 0 1px var(--brand-primary);}
+        .fac-btn.active-gold { border-color: var(--gold); background: #FFFBEB; color: #B45309; box-shadow: inset 0 0 0 1px var(--gold);}
+
         .hidden { display: none !important; }
         .flex-row { display: flex; gap: 8px; align-items: center; }
         .badge { padding: 4px 6px; border-radius: 2px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; display: inline-block; letter-spacing: 0.5px;}
@@ -80,28 +86,6 @@
         .ui-modal-body { padding: 0 20px 20px; font-size: 0.9rem; color: var(--text-muted); line-height: 1.6;}
         .ui-modal-footer { padding: 16px; background: #F9FAFB; display: flex; gap: 10px; justify-content: center; border-top: 1px solid var(--border-light);}
         .ui-modal-footer .btn { margin: 0; padding: 12px 24px; width: auto; font-size: 0.8rem;}
-
-        /* --- VIRTUAL CREDIT CARD UI --- */
-        .credit-card {
-            background: linear-gradient(135deg, #0A2463, #000000); 
-            border-radius: 12px; padding: 20px; color: white; position: relative;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3); overflow: hidden; margin-bottom: 20px;
-        }
-        .cc-bank { font-size: 0.75rem; font-weight: 800; letter-spacing: 1.5px; color: rgba(255,255,255,0.9); margin-bottom: 15px;}
-        .cc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;}
-        .cc-tier { font-size: 0.8rem; font-style: italic; letter-spacing: 1px; color: #E5E7EB;}
-        .cc-logo { font-weight: 800; font-size: 1.1rem; text-align: right; line-height: 1.1; letter-spacing: 1px;}
-        .cc-chip { width: 35px; height: 25px; background: linear-gradient(135deg, #e5c158, #b08d27); border-radius: 4px;}
-        .cc-number { font-family: monospace; font-size: 1.4rem; letter-spacing: 3px; margin: 15px 0 10px 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);}
-        .cc-bottom { display: flex; justify-content: space-between; align-items: flex-end;}
-        .cc-valid { font-size: 0.5rem; text-transform: uppercase; color: #D1D5DB;}
-        .cc-date { font-size: 0.8rem; font-family: monospace; letter-spacing: 1px;}
-        .cc-name { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px;}
-        .cc-network { display: flex; gap: -5px; }
-        .circle { width: 24px; height: 24px; border-radius: 50%; opacity: 0.8;}
-        .circle.red { background: #EB001B; transform: translateX(10px);}
-        .circle.yellow { background: #F79E1B; mix-blend-mode: multiply;}
-        .cc-blocked-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; justify-content:center; align-items:center; font-size:1.5rem; font-weight:bold; color:#FCA5A5; letter-spacing:2px; backdrop-filter: grayscale(1); z-index: 10;}
 
         /* Off-Screen PDF Template */
         #pdf-export-container { position: absolute; left: -9999px; top: 0; width: 800px; background: white; color: black; font-family: 'Times New Roman', Times, serif; }
@@ -149,15 +133,18 @@
         <div class="panel">
             <div class="panel-header">Origination Application</div>
             <form id="form-create" onsubmit="event.preventDefault(); createProject();">
+                
                 <div class="form-row">
                     <label>Facility Type</label>
-                    <select id="c_loan_type" onchange="toggleLoanTypeFields()">
-                        <option value="CD">Consumer Durable (Mobile/Appliance)</option>
-                        <option value="Bike">Two Wheeler (Bike Finance)</option>
-                        <option value="PL">Personal Loan</option>
-                        <option value="GL">Gold Loan (Pledge Ornaments)</option>
-                    </select>
+                    <div class="facility-grid">
+                        <div class="fac-btn active" id="fac_CD" onclick="setFacility('CD')">📱 Appliance</div>
+                        <div class="fac-btn" id="fac_Bike" onclick="setFacility('Bike')">🏍️ Two Wheeler</div>
+                        <div class="fac-btn" id="fac_PL" onclick="setFacility('PL')">💸 Personal Loan</div>
+                        <div class="fac-btn" id="fac_GL" onclick="setFacility('GL')" style="border-width: 2px;">🏅 Gold Loan</div>
+                    </div>
+                    <input type="hidden" id="c_loan_type" value="CD">
                 </div>
+
                 <div class="form-row"><label>First Name</label><input type="text" id="c_fname" required></div>
                 <div class="form-row"><label>Last Name</label><input type="text" id="c_lname" required></div>
                 <div class="form-row"><label>Mobile Number</label><input type="tel" id="c_mobile" maxlength="10" required></div>
@@ -181,7 +168,7 @@
                 <div class="form-row"><label>Declared Monthly Income (₹)</label><input type="number" id="c_income" required></div>
                 
                 <div id="pl_amount_field" class="hidden form-row">
-                    <label>Requested Loan Amount (₹)</label>
+                    <label id="lbl_req_amt">Requested Loan Amount (₹)</label>
                     <input type="number" id="c_pl_amount">
                 </div>
 
@@ -199,20 +186,20 @@
     </div>
 
     <div id="view-kyc" class="view-container">
-        <button class="btn btn-outline" onclick="nav('view-pipeline')" style="margin-bottom:16px; width:auto; padding: 10px 16px; font-size:0.75rem;">BACK TO PIPELINE</button>
+        <button type="button" class="btn btn-outline" onclick="nav('view-pipeline')" style="margin-bottom:16px; width:auto; padding: 10px 16px; font-size:0.75rem;">BACK TO PIPELINE</button>
         <div class="panel" id="kyc-customer-data"></div>
         <div class="panel">
             <div class="panel-header">KYC Gateway</div>
-            <button class="btn btn-black" id="btn-init-kyc" onclick="initiateKYC()">INITIATE E-KYC</button>
+            <button type="button" class="btn btn-black" id="btn-init-kyc" onclick="initiateKYC()">INITIATE E-KYC</button>
             <div id="kyc-otp-section" class="hidden">
                 <div class="form-row"><label>Enter 6-Digit OTP</label><input type="number" id="kyc_otp"></div>
-                <button class="btn btn-success" onclick="verifyCKYC()">VERIFY CKYC</button>
+                <button type="button" class="btn btn-success" onclick="verifyCKYC()">VERIFY CKYC</button>
             </div>
             <div id="kyc-success-section" class="hidden">
                 <div style="padding:16px; background:#D1FAE5; border:1px solid #34D399; border-radius:4px; color:#065F46; text-align:center; font-weight:700; margin-bottom:16px; font-family:monospace; font-size:1.1rem;">
                     [ VALIDATED ] CKYC: <span id="lbl_ckyc"></span>
                 </div>
-                <button class="btn btn-black" onclick="proceedToUnderwritingFlow()">PROCEED TO UNDERWRITING</button>
+                <button type="button" class="btn btn-black" onclick="proceedToUnderwritingFlow()">PROCEED TO UNDERWRITING</button>
             </div>
         </div>
     </div>
@@ -235,14 +222,14 @@
                     <label>IMEI / Serial 1</label>
                     <div class="flex-row">
                         <input type="text" id="ap_cd_imei1" oninput="autoSaveApp('imei1', this.value)" style="flex: 1;">
-                        <button class="btn btn-outline" style="width:auto; margin-top:0;" onclick="let v = generateRandomString(15, true); document.getElementById('ap_cd_imei1').value = v; autoSaveApp('imei1', v);">GEN</button>
+                        <button type="button" class="btn btn-outline" style="width:auto; margin-top:0;" onclick="let v = generateRandomString(15, true); document.getElementById('ap_cd_imei1').value = v; autoSaveApp('imei1', v);">GEN</button>
                     </div>
                 </div>
                 <div class="form-row">
                     <label>IMEI / Serial 2</label>
                     <div class="flex-row">
                         <input type="text" id="ap_cd_imei2" oninput="autoSaveApp('imei2', this.value)" style="flex: 1;">
-                        <button class="btn btn-outline" style="width:auto; margin-top:0;" onclick="let v = generateRandomString(15, true); document.getElementById('ap_cd_imei2').value = v; autoSaveApp('imei2', v);">GEN</button>
+                        <button type="button" class="btn btn-outline" style="width:auto; margin-top:0;" onclick="let v = generateRandomString(15, true); document.getElementById('ap_cd_imei2').value = v; autoSaveApp('imei2', v);">GEN</button>
                     </div>
                 </div>
             </div>
@@ -253,23 +240,30 @@
                     <label>Engine Number</label>
                     <div class="flex-row">
                         <input type="text" id="ap_bike_engine" oninput="autoSaveApp('engineNo', this.value)" style="flex: 1; text-transform:uppercase;">
-                        <button class="btn btn-outline" style="width:auto; margin-top:0;" onclick="let v = 'ENG'+generateRandomString(9, false); document.getElementById('ap_bike_engine').value = v; autoSaveApp('engineNo', v);">GEN</button>
+                        <button type="button" class="btn btn-outline" style="width:auto; margin-top:0;" onclick="let v = 'ENG'+generateRandomString(9, false); document.getElementById('ap_bike_engine').value = v; autoSaveApp('engineNo', v);">GEN</button>
                     </div>
                 </div>
                 <div class="form-row">
                     <label>Chassis Number (VIN)</label>
                     <div class="flex-row">
                         <input type="text" id="ap_bike_chassis" oninput="autoSaveApp('chassisNo', this.value)" style="flex: 1; text-transform:uppercase;">
-                        <button class="btn btn-outline" style="width:auto; margin-top:0;" onclick="let v = 'ME3'+generateRandomString(14, false); document.getElementById('ap_bike_chassis').value = v; autoSaveApp('chassisNo', v);">GEN</button>
+                        <button type="button" class="btn btn-outline" style="width:auto; margin-top:0;" onclick="let v = 'ME3'+generateRandomString(14, false); document.getElementById('ap_bike_chassis').value = v; autoSaveApp('chassisNo', v);">GEN</button>
                     </div>
                 </div>
             </div>
 
             <div id="asset_gl_fields" class="hidden">
+                <div style="background:#FFFBEB; border:1px solid #FDE68A; padding:12px; border-radius:4px; margin-bottom:16px;">
+                    <strong style="color:#B45309; font-size:0.8rem;">LIVE ASSAY RATE: ₹7,100 / Gram</strong>
+                </div>
                 <div class="form-row"><label>Number of Ornaments</label><input type="number" id="ap_gl_count"></div>
                 <div class="form-row"><label>Gross Weight (Grams)</label><input type="number" id="ap_gl_gross"></div>
-                <div class="form-row"><label>Net Weight (Grams) [Excluding Stones]</label><input type="number" id="ap_gl_net"></div>
+                <div class="form-row"><label>Net Weight (Grams) [Excluding Stones]</label><input type="number" id="ap_gl_net" oninput="document.getElementById('gl_est_val').innerText = '₹' + (this.value * 7100).toLocaleString('en-IN')"></div>
                 <div class="form-row">
+                    <label>Est. Inventory Value</label>
+                    <strong id="gl_est_val" style="font-size:1.4rem; color:var(--success);">₹0</strong>
+                </div>
+                <div class="form-row" style="margin-top:10px;">
                     <label>Purity Assayed</label>
                     <select id="ap_gl_purity"><option value="22K">22 Karat (Standard)</option><option value="24K">24 Karat (Pure)</option><option value="18K">18 Karat</option></select>
                 </div>
@@ -281,14 +275,14 @@
                     <label>Dealer Code</label>
                     <div class="flex-row">
                         <input type="text" id="ap_dealerId" oninput="autoSaveApp('p_dealerId', this.value)" placeholder="e.g. DT21011721" style="flex: 1;">
-                        <button class="btn btn-black" style="width:auto; margin-top:0;" onclick="verifyDealer()">VERIFY</button>
+                        <button type="button" class="btn btn-black" style="width:auto; margin-top:0;" onclick="verifyDealer()">VERIFY</button>
                     </div>
                     <div id="dealer-result" style="font-size:0.8rem; margin-top:8px; font-weight:700; text-transform:uppercase;"></div>
                 </div>
                 <div class="form-row"><label>Invoice Value / Ex-Showroom (₹)</label><input type="number" id="ap_value" oninput="autoSaveApp('prodValue', this.value)"></div>
             </div>
             
-            <button class="btn btn-black" style="margin-top: 20px;" onclick="submitAssetToUnderwriting()">SUBMIT FOR UNDERWRITING</button>
+            <button type="button" class="btn btn-black" style="margin-top: 20px;" onclick="submitAssetToUnderwriting()">SUBMIT FOR UNDERWRITING</button>
         </div>
     </div>
 
@@ -312,7 +306,7 @@
                     <option value="Other">Other</option>
                 </select>
             </div>
-            <button class="btn btn-black" onclick="submitPLToUnderwriting()">SUBMIT FOR UNDERWRITING</button>
+            <button type="button" class="btn btn-black" onclick="submitPLToUnderwriting()">SUBMIT FOR UNDERWRITING</button>
         </div>
     </div>
 
@@ -336,26 +330,26 @@
                     <span style="font-size:0.75rem; font-weight:800; color:var(--brand-primary); text-transform:uppercase;">Max Eligible Limit</span>
                     <strong id="disp_max_limit" style="font-size:1.2rem; color:var(--brand-primary);">₹0</strong>
                 </div>
-                <p style="font-size:0.65rem; color:#6B7280; margin-top:8px; font-style:italic;">*Limits secured via Multi-Variate Age/Income/LTV/CIBIL algorithms.</p>
+                <p style="font-size:0.65rem; color:#6B7280; margin-top:8px; font-style:italic;">*Limits dynamically secured via Multi-Variate Algorithms.</p>
             </div>
 
-            <button id="btn_req_exception" class="btn btn-outline" style="margin-bottom: 10px; font-size:0.75rem; border-color:var(--danger); color:var(--danger);" onclick="requestLimitException()">[ ! ] REQUEST LIMIT OVERRIDE</button>
-            <button id="btn_add_coapp" class="btn btn-outline hidden" style="margin-bottom: 10px; font-size:0.75rem; border-color:var(--success); color:var(--success);" onclick="showCoAppForm()">[ + ] ADD CO-APPLICANT TO ENHANCE LIMIT</button>
-            <button id="btn_add_gold" class="btn btn-outline hidden" style="margin-bottom: 20px; font-size:0.75rem; border-color:var(--gold); color:var(--gold);" onclick="showGoldPledgeForm()">[ + ] PLEDGE GOLD COLLATERAL</button>
+            <button type="button" id="btn_req_exception" class="btn btn-outline" style="margin-bottom: 10px; font-size:0.75rem; border-color:var(--danger); color:var(--danger);" onclick="requestLimitException()">[ ! ] REQUEST LIMIT OVERRIDE</button>
+            <button type="button" id="btn_add_coapp" class="btn btn-outline hidden" style="margin-bottom: 10px; font-size:0.75rem; border-color:var(--success); color:var(--success);" onclick="showCoAppForm()">[ + ] ADD CO-APPLICANT TO ENHANCE LIMIT</button>
+            <button type="button" id="btn_add_gold" class="btn btn-outline hidden" style="margin-bottom: 20px; font-size:0.75rem; border-color:var(--gold); color:var(--gold);" onclick="showGoldPledgeForm()">[ + ] PLEDGE GOLD COLLATERAL</button>
 
             <div id="co_app_form" class="hidden panel" style="border-color: var(--success); background: #F0FDF4; margin-bottom:20px;">
                 <h4 style="color:var(--success); font-size:0.8rem; margin-bottom:12px; font-weight:800;">CO-APPLICANT DETAILS</h4>
                 <div class="form-row"><label>Full Name</label><input type="text" id="co_name"></div>
                 <div class="form-row"><label>PAN Number</label><input type="text" id="co_pan" style="text-transform:uppercase;"></div>
                 <div class="form-row"><label>Monthly Income</label><input type="number" id="co_income"></div>
-                <button class="btn btn-success" onclick="processCoApplicant()">VERIFY & ADD LIMIT</button>
+                <button type="button" class="btn btn-success" onclick="processCoApplicant()">VERIFY & ADD LIMIT</button>
             </div>
 
             <div id="gold_pledge_form" class="hidden panel" style="border-color: var(--gold); background: #FFFBEB; margin-bottom:20px;">
                 <h4 style="color:var(--gold); font-size:0.8rem; margin-bottom:12px; font-weight:800;">INVENTORY / GOLD PLEDGE</h4>
                 <div class="form-row"><label>Net Weight to Pledge (Grams)</label><input type="number" id="gl_pledge_weight"></div>
                 <div class="form-row"><label>Purity Grade</label><select id="gl_pledge_purity"><option>22K</option><option>24K</option></select></div>
-                <button class="btn btn-warning" onclick="processGoldPledge()">APPRAISE & ENHANCE LIMIT</button>
+                <button type="button" class="btn btn-warning" onclick="processGoldPledge()">APPRAISE & ENHANCE LIMIT</button>
             </div>
 
             <div class="form-row"><label id="lbl_cost">ASSET COST (INR)</label><input type="number" id="l_cost" oninput="calcEMI()"></div>
@@ -389,12 +383,12 @@
                 <label>e-Mandate ID</label>
                 <div class="flex-row">
                     <input type="text" id="b_mandate" readonly style="flex:1;">
-                    <button class="btn btn-outline" style="width:auto; margin-top:0;" onclick="generateMandateWithOTP()">GENERATE</button>
+                    <button type="button" class="btn btn-outline" style="width:auto; margin-top:0;" onclick="generateMandateWithOTP()">GENERATE</button>
                 </div>
             </div>
 
             <div style="margin-top:24px;" id="btn_disburse_main">
-                <button class="btn btn-success" onclick="sanctionAndDisburse()">AUTHORIZE & DISBURSE</button>
+                <button type="button" class="btn btn-success" onclick="sanctionAndDisburse()">AUTHORIZE & DISBURSE</button>
             </div>
         </div>
     </div>
@@ -405,7 +399,7 @@
     </div>
 
     <div id="view-active-edit" class="view-container">
-        <button class="btn btn-outline" onclick="nav('view-portfolio')" style="margin-bottom:16px; width:auto; padding: 10px 16px; font-size:0.75rem;">BACK TO LEDGER</button>
+        <button type="button" class="btn btn-outline" onclick="nav('view-portfolio')" style="margin-bottom:16px; width:auto; padding: 10px 16px; font-size:0.75rem;">BACK TO LEDGER</button>
         <div class="panel-header">Account Management</div>
         <div class="panel" style="border-top: 4px solid var(--brand-primary);">
             
@@ -423,8 +417,8 @@
                     <div style="font-weight:800; color:#065F46; font-size:0.9rem; margin-bottom:8px;">SURPLUS LIMIT AVAILABLE: <span id="cc_surplus_amt"></span></div>
                     <p style="font-size:0.75rem; color:#047857; margin-bottom:16px;">Customer qualifies for additional facilities.</p>
                     <div id="cc_offer_banner_actions" style="display:flex; flex-direction:column; gap:8px;">
-                        <button class="btn btn-black" onclick="issueCreditCard()">ISSUE CO-BRANDED CREDIT CARD</button>
-                        <button class="btn btn-outline" style="border-color:var(--brand-primary); color:var(--brand-primary); margin-top:0;" onclick="showCrossSellPLForm()">ISSUE PERSONAL LOAN (TOP-UP)</button>
+                        <button type="button" class="btn btn-black" onclick="issueCreditCard()">ISSUE CO-BRANDED CREDIT CARD</button>
+                        <button type="button" class="btn btn-outline" style="border-color:var(--brand-primary); color:var(--brand-primary); margin-top:0;" onclick="showCrossSellPLForm()">ISSUE PERSONAL LOAN (TOP-UP)</button>
                     </div>
 
                     <div id="cross_sell_pl_form" class="hidden" style="background:#FFFFFF; border:1px solid #CBD5E1; padding:16px; border-radius:4px; margin-top:16px; text-align:left;">
@@ -443,7 +437,7 @@
                             </select>
                         </div>
                         <div class="form-row"><label>Tenure (Months)</label><input type="number" id="cs_pl_tenure" value="12"></div>
-                        <button class="btn btn-black" onclick="disburseCrossSellPL()">AUTHORIZE PL DISBURSEMENT</button>
+                        <button type="button" class="btn btn-black" onclick="disburseCrossSellPL()">AUTHORIZE PL DISBURSEMENT</button>
                     </div>
                 </div>
 
@@ -476,8 +470,8 @@
                     </div>
                     
                     <div class="flex-row">
-                        <button class="btn btn-outline" style="flex:1; font-size:0.75rem;" onclick="changeCardLimit()">ADJUST LIMIT</button>
-                        <button class="btn btn-danger" style="flex:1; font-size:0.75rem;" id="btn_toggle_block" onclick="toggleCardBlock()">BLOCK CARD</button>
+                        <button type="button" class="btn btn-outline" style="flex:1; font-size:0.75rem;" onclick="changeCardLimit()">ADJUST LIMIT</button>
+                        <button type="button" class="btn btn-danger" style="flex:1; font-size:0.75rem;" id="btn_toggle_block" onclick="toggleCardBlock()">BLOCK CARD</button>
                     </div>
                 </div>
 
@@ -511,6 +505,12 @@
                     <div class="form-row"><label>Engine Number</label><input type="text" id="e_bike_engine" disabled></div>
                     <div class="form-row"><label>Chassis Number</label><input type="text" id="e_bike_chassis" disabled></div>
                 </div>
+                <div id="edit_asset_sec_gl" class="hidden">
+                    <div class="data-grid" style="background:#FFFBEB; border-color:#FDE68A; margin-bottom:16px;">
+                        <div><span>Net Pledged (g)</span><strong id="e_gl_weight" style="color:#B45309;"></strong></div>
+                        <div><span>Appraised Val</span><strong id="e_gl_value" style="color:#B45309;"></strong></div>
+                    </div>
+                </div>
                 <div id="edit_asset_sec_pl" class="hidden">
                     <div class="form-row"><label>Loan Purpose</label><input type="text" id="e_pl_purpose" disabled></div>
                 </div>
@@ -534,7 +534,7 @@
         <div class="panel-header">Database Query</div>
         <div class="panel">
             <div class="form-row"><input type="text" id="search_query" placeholder="Enter ID or Name..."></div>
-            <button class="btn btn-black" onclick="performSearch()">EXECUTE SEARCH</button>
+            <button type="button" class="btn btn-black" onclick="performSearch()">EXECUTE SEARCH</button>
         </div>
         <div id="search-results"></div>
     </div>
@@ -639,7 +639,7 @@
         return new Promise(resolve => {
             document.getElementById('ui-modal-title').innerText = title;
             document.getElementById('ui-modal-msg').innerHTML = msg;
-            document.getElementById('ui-modal-actions').innerHTML = `<button class="btn btn-black" style="font-size:0.8rem;">ACKNOWLEDGE</button>`;
+            document.getElementById('ui-modal-actions').innerHTML = `<button type="button" class="btn btn-black" style="font-size:0.8rem;">ACKNOWLEDGE</button>`;
             const overlay = document.getElementById('ui-modal-overlay');
             overlay.classList.remove('hidden');
             document.querySelector('#ui-modal-actions button').onclick = () => { overlay.classList.add('hidden'); resolve(); };
@@ -655,8 +655,8 @@
                 
             document.getElementById('ui-modal-msg').innerHTML = `${msg}<br><br>${inputHTML}`;
             document.getElementById('ui-modal-actions').innerHTML = `
-                <button class="btn btn-outline" id="btn-cancel" style="font-size:0.8rem;">CANCEL</button>
-                <button class="btn btn-danger" id="btn-confirm" style="font-size:0.8rem;">${btnText}</button>
+                <button type="button" class="btn btn-outline" id="btn-cancel" style="font-size:0.8rem;">CANCEL</button>
+                <button type="button" class="btn btn-danger" id="btn-confirm" style="font-size:0.8rem;">${btnText}</button>
             `;
             const overlay = document.getElementById('ui-modal-overlay');
             overlay.classList.remove('hidden');
@@ -678,6 +678,8 @@
                 localStorage.setItem('nestDraftApp', JSON.stringify(draftApp));
             });
         });
+        // Initial setup for grids
+        toggleLoanTypeFields();
     };
 
     async function nav(viewId, navBtn = null) {
@@ -701,9 +703,35 @@
         }
     }
 
+    function setFacility(type) {
+        document.getElementById('c_loan_type').value = type;
+        document.querySelectorAll('.fac-btn').forEach(b => {
+            b.classList.remove('active');
+            b.classList.remove('active-gold');
+        });
+        if(type === 'GL') {
+            document.getElementById('fac_GL').classList.add('active-gold');
+        } else {
+            document.getElementById('fac_'+type).classList.add('active');
+        }
+        toggleLoanTypeFields();
+    }
+
     function toggleLoanTypeFields() { 
+        let val = document.getElementById('c_loan_type').value;
         let field = document.getElementById('pl_amount_field');
-        if(field) field.className = document.getElementById('c_loan_type').value === 'PL' ? 'form-row' : 'hidden'; 
+        let lbl = document.getElementById('lbl_req_amt');
+        if(field) {
+            if (val === 'PL') {
+                field.classList.remove('hidden');
+                if(lbl) lbl.innerText = "Requested Loan Amount (₹)";
+            } else if (val === 'GL') {
+                field.classList.remove('hidden');
+                if(lbl) lbl.innerText = "Requested Advance Against Gold (₹)";
+            } else {
+                field.classList.add('hidden');
+            }
+        }
     }
     
     function toggleSalariedFields() { 
@@ -715,7 +743,7 @@
         try {
             const type = document.getElementById('c_loan_type').value;
             const plAmt = document.getElementById('c_pl_amount').value;
-            if (type === 'PL' && !plAmt) return uiAlert("Requested Loan Amount missing.", "INPUT ERROR");
+            if ((type === 'PL' || type === 'GL') && !plAmt) return uiAlert("Requested Amount missing.", "INPUT ERROR");
 
             const app = {
                 appId: genId('APP'), loanType: type, plAmountReq: plAmt,
@@ -731,8 +759,8 @@
             draftApp = {}; localStorage.removeItem('nestDraftApp');
             document.getElementById('form-create').reset();
             document.querySelectorAll('#form-create input').forEach(i => i.value = ''); 
-            document.getElementById('c_loan_type').value = 'CD'; document.getElementById('c_occ').value = 'Student';
-            toggleLoanTypeFields(); toggleSalariedFields();
+            setFacility('CD'); // Reset grid UI
+            toggleSalariedFields();
             
             await uiAlert(`Application recorded successfully.<br><br>System ID: <b>${app.appId}</b>`, "OPERATION SUCCESSFUL");
             setAppIdContext(app.appId); nav('view-pipeline', document.querySelectorAll('.nav-item')[1]);
@@ -880,7 +908,7 @@
 
         if (app.loanType === 'GL') {
             app.gl_weight = parseFloat(document.getElementById('ap_gl_net').value);
-            if(!app.gl_weight) return uiAlert("Net Gold Weight is required for appraisal.", "APPRAISAL ERROR");
+            if(!app.gl_weight || app.gl_weight <= 0) return uiAlert("Net Gold Weight is required for appraisal.", "APPRAISAL ERROR");
             app.prodValue = Math.floor(app.gl_weight * 7100); 
             app.dealerVerified = true; 
         } else {
@@ -906,7 +934,6 @@
         if(app) { app.plPurpose = document.getElementById('pl_purpose').value; saveDB(); await executeAutomatedPolicyEngine(); }
     }
 
-    // --- ENHANCED LIMIT & AGE ALGORITHMS ---
     async function executeAutomatedPolicyEngine() {
         await showSysLoader("EVALUATING MULTI-FACTOR RISK PROFILE...", 2500);
         const app = getApp();
@@ -924,16 +951,16 @@
         let code = 'XX', status = 'PENDING', reason = "", dpP = 0, apr = 0;
         const age = (new Date() - new Date(app.dob)) / (1000 * 60 * 60 * 24 * 365.25);
         
-        // Strict Minimum Age Reject
+        // Strict Minimum Age Policy
         if (age < 18) {
             status = 'REJECTED'; reason = "Policy Decline: Applicant Under 18";
         }
 
-        // 18-21 Co-Applicant Mandate
+        // 18-21 Co-Applicant Mandate Lock
         let requiresCoApp = (age >= 18 && age < 21);
         app.requiresCoApp = requiresCoApp;
 
-        // Base Limit Calculation (if not rejected by age)
+        // Base Limit Engine (if not hard-rejected)
         let baseMult = 0;
         if (status !== 'REJECTED') {
             if (cibil < 400) { code = 'XX'; status = 'REJECTED'; reason = `SEVERE DEROGATORY (${cibil})`; }
@@ -946,21 +973,17 @@
             else { code = 'FR'; status = 'APPROVED'; dpP = 0; apr = 8; baseMult = 8.0; }
         }
 
-        // Apply Enhancements
+        // Limit Multipliers
         let occMult = (app.occ === 'Salaried') ? 3.0 : (app.occ === 'Student' ? 0.3 : 1.0);
         let assetMult = (app.loanType === 'Bike') ? 2.5 : 1.0; 
         
-        // Progressive Age Limit Enhancer (Scale up to 60)
         let ageMult = 1.0;
-        if (age > 21 && age <= 60) {
-            ageMult = 1.0 + ((age - 21) * 0.04); 
-        } else if (age > 60) {
-            ageMult = 0.5; 
-        }
+        if (age > 21 && age <= 60) { ageMult = 1.0 + ((age - 21) * 0.04); } 
+        else if (age > 60) { ageMult = 0.5; }
 
         let maxEligible = 0;
         if (app.loanType === 'GL' && status !== 'REJECTED') {
-            maxEligible = Math.floor((app.gl_weight || 0) * 5325); // Gold skips Income constraint
+            maxEligible = Math.floor((app.gl_weight || 0) * 5325); // ~75% LTV, overrides Income
             code = 'GL-SECURED'; status = 'APPROVED'; dpP = 0; apr = 14; 
         } else {
             maxEligible = Math.floor((app.income * baseMult * occMult * ageMult * assetMult) / 1000) * 1000;
@@ -992,22 +1015,19 @@
         document.getElementById('l_cibil').innerText = app.cibil + (app.hasCoApp ? ' (+CO)' : '') + (app.hasGold ? ' (+GL)' : ''); 
         document.getElementById('l_tier').innerText = app.tier;
         
-        let reqAmt = app.loanType === 'PL' ? app.plAmountReq : app.prodValue;
+        let reqAmt = (app.loanType === 'PL' || app.loanType === 'GL') ? app.plAmountReq : app.prodValue;
         document.getElementById('disp_req_amt').innerText = `₹${parseFloat(reqAmt || 0).toLocaleString()}`;
         document.getElementById('disp_max_limit').innerText = `₹${parseFloat(app.maxEligible || 0).toLocaleString()}`;
 
-        // CO-APPLICANT AND POLICY COMPLIANCE
         let complianceMsg = "";
         let disburseBtn = document.getElementById('btn_disburse_main');
         
         if (app.requiresCoApp && !app.hasCoApp) {
             document.getElementById('btn_add_coapp').classList.remove('hidden');
-            if(disburseBtn) disburseBtn.classList.add('hidden'); // Lock Disbursal
+            if(disburseBtn) disburseBtn.classList.add('hidden'); // Policy Lock
             complianceMsg = "<div style='background:#FEE2E2; color:#B91C1C; padding:10px; border-radius:4px; font-size:0.75rem; margin-bottom:16px;'><b style='text-transform:uppercase;'>System Lock:</b> Applicant is under 21. A Co-Applicant is MANDATORY to proceed.</div>";
         } else {
-            if(disburseBtn) disburseBtn.classList.remove('hidden'); // Unlock Disbursal
-            
-            // Allow enhancement if limit is short of requested
+            if(disburseBtn) disburseBtn.classList.remove('hidden'); // Unlock
             if (reqAmt > app.maxEligible) {
                 if(!app.hasCoApp) document.getElementById('btn_add_coapp').classList.remove('hidden');
                 if(!app.hasGold) document.getElementById('btn_add_gold').classList.remove('hidden');
@@ -1027,8 +1047,8 @@
         document.getElementById('b_mandate').value = app.mandateId || '';
         document.getElementById('l_tenure').value = app.loanDetails?.tenure || 12;
 
-        if(app.loanType === 'PL') {
-            document.getElementById('lbl_cost').innerText = "APPROVED LOAN AMOUNT (INR)";
+        if(app.loanType === 'PL' || app.loanType === 'GL') {
+            document.getElementById('lbl_cost').innerText = app.loanType === 'GL' ? "APPROVED GOLD ADVANCE (INR)" : "APPROVED LOAN AMOUNT (INR)";
             document.getElementById('l_cost').value = Math.min(app.plAmountReq, app.maxEligible);
             document.getElementById('sec_dp').classList.add('hidden'); 
             document.getElementById('lbl_disb').innerText = "Cust. Bank Disbursement";
@@ -1037,8 +1057,7 @@
             document.getElementById('lbl_cost').innerText = "ASSET COST (INR)";
             document.getElementById('l_cost').value = app.prodValue || 0;
             document.getElementById('sec_dp').classList.remove('hidden');
-            document.getElementById('lbl_disb').innerText = app.loanType === 'GL' ? "Cust. Bank Disbursement" : "Dealer Disbursement";
-            
+            document.getElementById('lbl_disb').innerText = "Dealer Disbursement";
             let policyLoan = app.prodValue * (1 - (defDpPercent / 100));
             let actualLoan = Math.min(policyLoan, app.maxEligible);
             let requiredDp = app.prodValue - actualLoan;
@@ -1085,7 +1104,7 @@
         if(app) { app.maxEligible = (app.maxEligible || 0) + extraLimit; app.hasCoApp = true; app.coAppDetails = { pan, cibil, extraLimit }; saveDB(); }
         await uiAlert(`Co-Applicant Approved!<br>CIBIL: ${cibil}<br>Additional Limit: ₹${extraLimit.toLocaleString()}`, "LIMIT ENHANCED");
         
-        // FORM RESET
+        // BUG FIX: Memory Cleared
         document.getElementById('co_name').value = ''; document.getElementById('co_pan').value = ''; document.getElementById('co_income').value = '';
         document.getElementById('co_app_form').classList.add('hidden');
         openStructuring(app, app.loanType==='PL'?0:20, 16, app?app.forceUnderwritten:false); 
@@ -1096,7 +1115,7 @@
         if(!w || w <= 0) return uiAlert("Enter a valid net weight.");
         
         await showSysLoader("APPRAISING INVENTORY...", 1500);
-        const extraLimit = Math.floor(w * 5325); // Current standard LTV algorithm
+        const extraLimit = Math.floor(w * 5325); // Standard Purity LTV
         
         const app = getApp();
         if(app) { app.maxEligible = (app.maxEligible || 0) + extraLimit; app.hasGold = true; saveDB(); }
@@ -1131,7 +1150,7 @@
         const app = getApp();
         if(!app) return;
         let cost = parseFloat(document.getElementById('l_cost').value) || 0;
-        let dp = app.loanType === 'PL' ? 0 : (parseFloat(document.getElementById('l_dp').value) || 0);
+        let dp = (app.loanType === 'PL' || app.loanType === 'GL') ? 0 : (parseFloat(document.getElementById('l_dp').value) || 0);
         let apr = parseFloat(document.getElementById('l_apr').value) || 0;
         let tenure = parseFloat(document.getElementById('l_tenure').value) || 1;
 
@@ -1165,12 +1184,8 @@
         const disburseTarget = (app && (app.loanType === 'PL' || app.loanType === 'GL')) ? 'Customer Bank Account' : 'Dealer Account';
         await uiAlert(`TRANSACTION COMPLETE.<br><br>Funds successfully scheduled for disbursement to ${disburseTarget}.<br><br>Loan A/C: <b>${app ? app.loanId : ''}</b>`, "DISBURSEMENT AUTHORIZED");
         
-        // SAFE PDF GENERATION WRAPPER - Prevents Crashing / Refreshing
-        try {
-            if(app) generateSanctionLetter(app);
-        } catch (error) {
-            console.error("PDF Generation Failed, but flow is secure: ", error);
-        }
+        // SAFE PDF GENERATOR
+        try { if(app) generateSanctionLetter(app); } catch (e) { console.error("PDF Suppressed, flow secure.", e); }
         
         setAppIdContext(null); nav('view-portfolio', document.querySelectorAll('.nav-item')[3]);
     }
@@ -1178,7 +1193,7 @@
     function generateSanctionLetter(app) {
         document.getElementById('pdf_date').innerText = new Date().toLocaleDateString(); document.getElementById('pdf_app').innerText = app.appId || '';
         document.getElementById('pdf_name').innerText = `${app.fname || ''} ${app.lname || ''}`.toUpperCase(); document.getElementById('pdf_add').innerText = app.address || ''; document.getElementById('pdf_mob').innerText = app.mobile || '';
-        document.getElementById('pdf_sub').innerText = `Application for ${app.loanType === 'PL' ? 'Personal Loan' : (app.loanType === 'Bike' ? 'Two Wheeler Loan' : 'Consumer Durable Loan')}`;
+        document.getElementById('pdf_sub').innerText = `Application for ${app.loanType === 'PL' ? 'Personal Loan' : (app.loanType === 'Bike' ? 'Two Wheeler Loan' : (app.loanType === 'GL' ? 'Gold Loan' : 'Consumer Durable'))}`;
         document.getElementById('pdf_t_type').innerText = app.loanType === 'PL' ? 'Personal Loan' : (app.loanType === 'Bike' ? 'Two Wheeler Loan' : (app.loanType === 'GL' ? 'Gold Loan' : 'Consumer Durable'));
         
         let p_prin = app.loanDetails && app.loanDetails.principal ? app.loanDetails.principal : 0;
@@ -1229,7 +1244,7 @@
                     <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><strong style="text-transform:uppercase;">${app.fname || 'UNKNOWN'} ${app.lname || ''}</strong><span class="badge ${badgeClass}">${badgeText}</span></div>
                     <div class="data-grid" style="margin-bottom:8px;"><div><span>App ID</span><strong style="font-family:monospace;">${app.appId || 'N/A'}</strong></div><div><span>Max Limit</span><strong>₹${maxLimit}</strong></div></div>
                     ${extraHTML}
-                    <button class="btn btn-outline" onclick="${isReq ? `approveExceptionLimit('${app.appId}')` : `triggerForceUnderwriteRej('${app.appId}')`}" style="font-size:0.75rem; border-color:var(--brand-primary);">${btnText}</button></div>`;
+                    <button type="button" class="btn btn-outline" onclick="${isReq ? `approveExceptionLimit('${app.appId}')` : `triggerForceUnderwriteRej('${app.appId}')`}" style="font-size:0.75rem; border-color:var(--brand-primary);">${btnText}</button></div>`;
             } catch (e) {
                 console.error("Failed to render exception record:", e);
             }
@@ -1287,13 +1302,16 @@
         document.getElementById('e_sanction_amt').innerText = `₹${parseFloat(principalAmt).toLocaleString()}`;
         
         if(app.loanType === 'CD') {
-            document.getElementById('edit_asset_sec_cd').classList.remove('hidden'); document.getElementById('edit_asset_sec_bike').classList.add('hidden'); document.getElementById('edit_asset_sec_pl').classList.add('hidden');
+            document.getElementById('edit_asset_sec_cd').classList.remove('hidden'); document.getElementById('edit_asset_sec_bike').classList.add('hidden'); document.getElementById('edit_asset_sec_gl').classList.add('hidden'); document.getElementById('edit_asset_sec_pl').classList.add('hidden');
             document.getElementById('e_cd_dealer').value = app.dealerName || 'N/A'; document.getElementById('e_cd_name').value = app.p_name || 'N/A'; document.getElementById('e_cd_imei1').value = app.imei1 || 'N/A'; document.getElementById('e_cd_imei2').value = app.imei2 || 'N/A';
         } else if (app.loanType === 'Bike') {
-            document.getElementById('edit_asset_sec_cd').classList.add('hidden'); document.getElementById('edit_asset_sec_bike').classList.remove('hidden'); document.getElementById('edit_asset_sec_pl').classList.add('hidden');
+            document.getElementById('edit_asset_sec_cd').classList.add('hidden'); document.getElementById('edit_asset_sec_bike').classList.remove('hidden'); document.getElementById('edit_asset_sec_gl').classList.add('hidden'); document.getElementById('edit_asset_sec_pl').classList.add('hidden');
             document.getElementById('e_bike_dealer').value = app.dealerName || 'N/A'; document.getElementById('e_bike_name').value = app.p_name || 'N/A'; document.getElementById('e_bike_engine').value = app.engineNo || 'N/A'; document.getElementById('e_bike_chassis').value = app.chassisNo || 'N/A';
+        } else if (app.loanType === 'GL') {
+            document.getElementById('edit_asset_sec_cd').classList.add('hidden'); document.getElementById('edit_asset_sec_bike').classList.add('hidden'); document.getElementById('edit_asset_sec_pl').classList.add('hidden'); document.getElementById('edit_asset_sec_gl').classList.remove('hidden');
+            document.getElementById('e_gl_weight').innerText = (app.gl_weight || 0) + ' g'; document.getElementById('e_gl_value').innerText = '₹' + (app.prodValue || 0).toLocaleString();
         } else {
-            document.getElementById('edit_asset_sec_cd').classList.add('hidden'); document.getElementById('edit_asset_sec_bike').classList.add('hidden'); document.getElementById('edit_asset_sec_pl').classList.remove('hidden');
+            document.getElementById('edit_asset_sec_cd').classList.add('hidden'); document.getElementById('edit_asset_sec_bike').classList.add('hidden'); document.getElementById('edit_asset_sec_gl').classList.add('hidden'); document.getElementById('edit_asset_sec_pl').classList.remove('hidden');
             document.getElementById('e_pl_purpose').value = app.plPurpose || 'N/A';
         }
 
